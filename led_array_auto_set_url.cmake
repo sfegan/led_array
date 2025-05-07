@@ -1,0 +1,5 @@
+set(LED_ARRAY_PATH_URL_BASE "https://github.com/sfegan/led_array/tree/HEAD")
+macro(led_array_auto_set_url TARGET)
+    file(RELATIVE_PATH URL_REL_PATH "${LED_ARRAY_PATH}" "${CMAKE_CURRENT_LIST_DIR}")
+    pico_set_program_url(${TARGET} "${LED_ARRAY_PATH_URL_BASE}/${URL_REL_PATH}")
+endmacro()

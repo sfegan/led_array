@@ -1,0 +1,62 @@
+name: Raspberry Pi build and deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - .gitignore
+      - README.md
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        board: [ rp2040, rp2350 ]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install prerequisites
+      shell: bash
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+        git clone https://github.com/raspberrypi/pico-sdk.git
+        cd pico-sdk
+        git submodule update --init
+
+    - name: Configure
+      shell: bash
+      run: |
+        mkdir build
+        cd build
+        cmake -DPICO_SDK_PATH=../pico-sdk           \
+              -DCMAKE_BUILD_TYPE=Release            \
+              -DPICO_PLATFORM=${{ matrix.board }}   \
+              ..
+
+    - name: Build
+      shell: bash
+      run: |
+        cd build
+        make -j3
+        mv led_strip_pattern_generator/led_strip_pattern_generator.uf2 ../led_strip_pattern_generator-${{ matrix.board }}.uf2
+
+    - name: Archive led_strip_pattern_generator-${{ matrix.board }}.uf2
+      uses: actions/upload-artifact@v4
+      with:
+        name: led_strip_pattern_generator-uf2-${{ matrix.board }}
+        path: led_strip_pattern_generator-${{ matrix.board }}.uf2
+
+    - name: Publish UF2 file as Github release
+      uses: softprops/action-gh-release@v2
+      with: 
+        files: led_strip_pattern_generator-${{ matrix.board }}.uf2
+        name: "Build of ${{ matrix.board }} LED array code"
+        tag_name: "${{ matrix.board }}"
+        body: Automated build of LED array code
+        prerelease: true
+  
