@@ -3,7 +3,7 @@
 #include "hardware/pio.h"
 
 inline uint32_t rgb_to_grbz(uint32_t r, uint32_t g, uint32_t b) {
-    return ((r&0xFF) << 8) | ((g&0xFF) << 16) | ((b&0xFF) << 8);
+    return ((r&0xFF) << 16) | ((g&0xFF) << 24) | ((b&0xFF) << 8);
 }
 
 void rgb_to_hsv(int r, int g, int b, int& h, int& s, int& v);
