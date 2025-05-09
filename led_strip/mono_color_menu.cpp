@@ -19,7 +19,7 @@ MonoColorMenu::MonoColorMenu(SerialPIO& pio):
     pio_(pio)
 {
     timer_interval_us_ = 1000000; // 1Hz
-    
+
     set_nled_value(false);
     set_non_value(false);
     set_front_back_value(false);

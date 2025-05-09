@@ -21,10 +21,13 @@ namespace {
 
 int Menu::event_loop(bool enable_escape_sequences, bool enable_reboot)
 {
+    int return_code = 0;
+    if(!this->event_loop_starting(return_code)) {
+        return return_code;
+    }
     static const int64_t multi_keypress_timeout = 100000; /* 100ms */
     absolute_time_t next_timer = delayed_by_us(get_absolute_time(), timer_interval_us_);
     uint64_t timer_delay = timer_interval_us_;
-    int return_code = 0;
     bool was_connected = false;
     int last_key = -1;
     absolute_time_t last_key_time = get_absolute_time();
@@ -37,6 +40,7 @@ int Menu::event_loop(bool enable_escape_sequences, bool enable_reboot)
             if(!was_connected) {
                 last_key_time = get_absolute_time();
                 if(!this->controller_connected(return_code)) {
+                    this->event_loop_finishing(return_code);
                     return return_code;
                 }
                 if(enable_escape_sequences) {
@@ -59,6 +63,7 @@ int Menu::event_loop(bool enable_escape_sequences, bool enable_reboot)
                 if(!escape_sequence.empty()) {
                     for(auto k : escape_sequence) {
                         if(!this->process_key_press(k, 1, return_code, {}, next_timer)) {
+                            this->event_loop_finishing(return_code);
                             return return_code;
                         }
                     }
@@ -76,6 +81,7 @@ int Menu::event_loop(bool enable_escape_sequences, bool enable_reboot)
                     case FAILED_ESCAPE_SEQUENCE:
                         for(auto k : escape_sequence) {
                             if(!this->process_key_press(k, 1, return_code, {}, next_timer)) {
+                                this->event_loop_finishing(return_code);
                                 return return_code;
                             }
                         }
@@ -107,6 +113,7 @@ int Menu::event_loop(bool enable_escape_sequences, bool enable_reboot)
                             if(!this->process_key_press(escaped_key, 1, 
                                 return_code, escape_sequence_parameters, next_timer))
                             {
+                                this->event_loop_finishing(return_code);
                                 return return_code;
                             }
                         }
@@ -127,6 +134,7 @@ int Menu::event_loop(bool enable_escape_sequences, bool enable_reboot)
                         if(!this->process_key_press(escaped_key, key_count, 
                             return_code, escape_sequence_parameters, next_timer))
                         {
+                            this->event_loop_finishing(return_code);
                             return return_code;
                         }
                         escape_sequence.clear();
@@ -164,6 +172,7 @@ int Menu::event_loop(bool enable_escape_sequences, bool enable_reboot)
                     }
                     if(!this->process_key_press(key, key_count, return_code, 
                             escape_sequence_parameters, next_timer)) {
+                        this->event_loop_finishing(return_code);
                         return return_code;
                     }                        
                 }
@@ -174,6 +183,7 @@ int Menu::event_loop(bool enable_escape_sequences, bool enable_reboot)
         } else {
             if(was_connected) {
                 if(!this->controller_disconnected(return_code)) {
+                    this->event_loop_finishing(return_code);
                     return return_code;
                 }
                 was_connected = false;
@@ -189,12 +199,14 @@ int Menu::event_loop(bool enable_escape_sequences, bool enable_reboot)
         if(absolute_time_diff_us(get_absolute_time(), next_timer) <= 0) {
             next_timer = delayed_by_us(next_timer, timer_interval_us_);
             if(!this->process_timer(was_connected, return_code, next_timer)) {
+                this->event_loop_finishing(return_code);
                 return return_code;
             }
         }
         timer_delay = 
             std::max(absolute_time_diff_us(get_absolute_time(), next_timer), 0LL);
     }
+    this->event_loop_finishing(return_code);
     return return_code;
 }
 
