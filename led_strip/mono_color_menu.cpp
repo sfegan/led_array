@@ -6,6 +6,7 @@
 #include "../common/build_date.hpp"
 #include "../common/menu.hpp"
 #include "../common/input_menu.hpp"
+#include "../common/color_led.hpp"
 #include "main.hpp"
 #include "mono_color_menu.hpp"
 
@@ -76,39 +77,7 @@ void MonoColorMenu::set_v_value(bool draw)
 
 void MonoColorMenu::transfer_rgb_to_hsv(bool draw) 
 {
-    float r = r_ / 255.0f;
-    float g = g_ / 255.0f;
-    float b = b_ / 255.0f;
-
-    float max_val = std::max({r, g, b});
-    float min_val = std::min({r, g, b});
-    float delta = max_val - min_val;
-
-    if (delta == 0) {
-        h_ = 0;
-        s_ = 0;
-        v_ = static_cast<int>(max_val * 255);
-
-        set_h_value(draw);
-        set_s_value(draw);
-        set_v_value(draw);
-
-        return;
-    }
-
-    if (max_val == r) {
-        h_ = static_cast<int>(60 * fmod((g - b) / delta, 6));
-    } else if (max_val == g) {
-        h_ = static_cast<int>(60 * ((b - r) / delta + 2));
-    } else {
-        h_ = static_cast<int>(60 * ((r - g) / delta + 4));
-    }
-
-    if (h_ < 0) h_ += 360;
-
-    s_ = static_cast<int>((delta / max_val) * 255);
-    v_ = static_cast<int>(max_val * 255);
-
+    rgb_to_hsv(r_, g_, b_, h_, s_, v_);
     set_h_value(draw);
     set_s_value(draw);
     set_v_value(draw);
@@ -116,37 +85,33 @@ void MonoColorMenu::transfer_rgb_to_hsv(bool draw)
 
 void MonoColorMenu::transfer_hsv_to_rgb(bool draw) 
 {
-    float r, g, b;
-    float h = h_ / 360.0f;
-    float s = s_ / 255.0f;
-    float v = v_ / 255.0f;
-
-    int i = static_cast<int>(h * 6);
-    float f = h * 6 - i;
-    float p = v * (1 - s);
-    float q = v * (1 - f * s);
-    float t = v * (1 - (1 - f) * s);
-
-    switch(i % 6) {
-        case 0: r = v; g = t; b = p; break;
-        case 1: r = q; g = v; b = p; break;
-        case 2: r = p; g = v; b = t; break;
-        case 3: r = p; g = q; b = v; break;
-        case 4: r = t; g = p; b = v; break;
-        case 5: r = v; g = p; b = q; break;
-    }
-
-    r_ = static_cast<int>(r * 255);
-    g_ = static_cast<int>(g * 255);
-    b_ = static_cast<int>(b * 255);
-
+    hsv_to_rgb(h_, s_, v_, r_, g_, b_);
     set_r_value(draw);
     set_g_value(draw);
     set_b_value(draw);
 }
 
+extern PIO main_pio;
+extern uint main_sm;
+
 void MonoColorMenu::send_color_string()
 {
+    int iled = 0;
+    if(back_) {
+        while(iled < nled_-non_) {
+            put_pixel(main_pio, main_sm, 0);
+            iled++;
+        }
+    }
+    uint32_t color_code = rgb_to_grbz(r_, g_, b_);
+    for(int ion=0; ion<non_; ion++) {
+        put_pixel(main_pio, main_sm, color_code);
+        iled++;
+    }
+    while(iled < nled_) {
+        put_pixel(main_pio, main_sm, 0);
+        iled++;
+    }
 }
 
 std::vector<SimpleItemValueMenu::MenuItem> MonoColorMenu::make_menu_items() 
@@ -213,7 +178,7 @@ bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
         }
         break;
     case 'n':
-        if(InplaceInputMenu::input_value_in_range(non_, nled_, MAX_PIXELS, this, MIP_NON, 4)) {
+        if(InplaceInputMenu::input_value_in_range(non_, 0, nled_, this, MIP_NON, 4)) {
             send_color_string();
         }
         set_non_value();

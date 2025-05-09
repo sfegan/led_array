@@ -33,3 +33,4 @@ build/
 *.exe
 *.out
 *.app
+common/ws2812.pio.h
