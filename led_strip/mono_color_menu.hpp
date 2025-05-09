@@ -58,5 +58,4 @@ private:
     int h_ = 0;
     int s_ = 0;
     int v_ = 0;
-    unsigned heartbeat_timer_count_ = 0;
 };

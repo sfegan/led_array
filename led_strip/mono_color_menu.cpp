@@ -17,8 +17,7 @@ namespace {
 MonoColorMenu::MonoColorMenu() : 
     SimpleItemValueMenu(make_menu_items(), "Mono color menu") 
 {
-    // nothing to see here
-    timer_interval_us_ = 10000; // 100Hz
+    timer_interval_us_ = 1000000; // 1Hz
 }
 
 void MonoColorMenu::set_nled_value(bool draw) 
@@ -355,13 +354,6 @@ bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
 bool MonoColorMenu::process_timer(bool controller_is_connected, int& return_code, 
     absolute_time_t& next_timer)
 {
-    heartbeat_timer_count_ += 1;
-    if(heartbeat_timer_count_ == 100) {
-        if(controller_is_connected) {
-            set_heartbeat(!heartbeat_);
-        }
-        heartbeat_timer_count_ = 0;
-    }
-
+    set_heartbeat(!heartbeat_);
     return true;
 }
