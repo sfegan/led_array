@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "../common/menu.hpp"
+#include "../common/color_led.hpp"
 
 class MainMenu: public SimpleItemValueMenu {
 public:
@@ -23,4 +24,6 @@ private:
     };
 
     static std::vector<MenuItem> make_menu_items();
+
+    SerialPIO pio_;
 };

@@ -12,3 +12,38 @@ void hsv_to_rgb(int h, int s, int v, int& r, int& g, int& b);
 inline void put_pixel(PIO pio, uint sm, int pixel_code) {
     pio_sm_put_blocking(pio, sm, pixel_code);
 }
+
+class SerialPIO {
+public:
+    SerialPIO(uint pin, uint baudrate = 800000);
+    ~SerialPIO();
+    void set_pin(uint pin, uint baudrate = 800000);
+    
+    void activate_program();
+    void deactivate_program();
+
+    inline void put_pixel(uint32_t pixel_code) {
+        hard_assert(program_activated_);
+        pio_sm_put_blocking(pio_, sm_, pixel_code);
+    }
+    inline void put_pixel(uint32_t pixel_code, uint32_t nled) {
+        hard_assert(program_activated_);
+        for(unsigned i=0; i<nled; i++) {
+            pio_sm_put_blocking(pio_, sm_, pixel_code);
+        }
+    }
+    PIO pio() const { return pio_; }
+    uint sm() const { return sm_; }
+    uint pin() const { return pin_; }
+
+private:
+    SerialPIO(const SerialPIO&) = delete;
+    SerialPIO& operator=(const SerialPIO&) = delete;
+
+    bool program_activated_ = false;
+    PIO pio_;
+    uint sm_;
+    uint offset_; 
+    uint pin_;
+    uint baudrate_;
+};

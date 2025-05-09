@@ -15,4 +15,6 @@ enum Pins { VDAC_BASE_PIN       = 0,
             DAC_WR_PIN          = 26,
             DAC_SEL_BASE_PIN    = 27 };
 
-#define MAX_PIXELS 600
+#define MAX_PIXELS 32*8*8
+#define WS2812_DEFAULT_BAUDRATE 800000
+#define WS2812_DEFAULT_PIN 2

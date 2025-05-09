@@ -5,10 +5,11 @@
 #include <pico/stdlib.h>
 
 #include "../common/menu.hpp"
+#include "../common/color_led.hpp"
 
 class MonoColorMenu: public SimpleItemValueMenu {
 public:
-    MonoColorMenu();
+    MonoColorMenu(SerialPIO& pio_);
     virtual ~MonoColorMenu() { }
     bool event_loop_starting(int& return_code) final;
     void event_loop_finishing(int& return_code) final;
@@ -49,6 +50,8 @@ private:
     void transfer_rgb_to_hsv(bool draw = true);
     void transfer_hsv_to_rgb(bool draw = true);    
 
+    SerialPIO& pio_;
+    
     int nled_ = 0;
     int non_ = 0;
     bool back_ = false;

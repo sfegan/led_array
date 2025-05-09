@@ -1,7 +1,11 @@
 #include <algorithm>
 #include <cmath>
 
+#include <hardware/pio.h>
+#include <hardware/clocks.h>
+
 #include "color_led.hpp"
+#include "ws2812.pio.h"
 
 void rgb_to_hsv(int ir, int ig, int ib, int& ih, int& is, int& iv)
 {
@@ -61,3 +65,40 @@ void hsv_to_rgb(int ih, int is, int iv, int& ir, int& ig, int& ib)
     ib = static_cast<int>(b * 255);
 }
 
+SerialPIO::SerialPIO(uint pin, uint baudrate): pin_(pin), baudrate_(baudrate)
+{
+    // nothing to see here
+}
+
+SerialPIO::~SerialPIO()
+{
+    if(program_activated_) {
+        deactivate_program();
+    }   
+}
+
+void SerialPIO::set_pin(uint pin, uint baudrate)
+{
+    hard_assert(!program_activated_);
+    pin_ = pin;
+    baudrate_ = baudrate;
+}   
+
+
+void SerialPIO::activate_program()
+{
+    hard_assert(!program_activated_);
+    bool success = pio_claim_free_sm_and_add_program_for_gpio_range(
+        &ws2812_program, &pio_, &sm_, &offset_, pin_, 1, true);
+    hard_assert(success);
+    ws2812_program_init(pio_, sm_, offset_, pin_, baudrate_, false);
+    program_activated_ = true;
+}
+
+void SerialPIO::deactivate_program()
+{
+    hard_assert(program_activated_);
+    pio_remove_program_and_unclaim_sm(
+        &ws2812_program, pio_, sm_, offset_);
+    program_activated_ = false;
+}

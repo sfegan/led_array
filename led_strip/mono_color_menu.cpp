@@ -14,8 +14,9 @@ namespace {
     static BuildDate build_date(__DATE__,__TIME__);
 }
 
-MonoColorMenu::MonoColorMenu() : 
-    SimpleItemValueMenu(make_menu_items(), "Mono color menu") 
+MonoColorMenu::MonoColorMenu(SerialPIO& pio):
+    SimpleItemValueMenu(make_menu_items(), "Mono color menu"),
+    pio_(pio)
 {
     timer_interval_us_ = 1000000; // 1Hz
 }
@@ -90,26 +91,15 @@ void MonoColorMenu::transfer_hsv_to_rgb(bool draw)
     set_b_value(draw);
 }
 
-extern PIO main_pio;
-extern uint main_sm;
-
 void MonoColorMenu::send_color_string()
 {
-    int iled = 0;
-    if(back_) {
-        while(iled < nled_-non_) {
-            put_pixel(main_pio, main_sm, 0);
-            iled++;
-        }
-    }
     uint32_t color_code = rgb_to_grbz(r_, g_, b_);
-    for(int ion=0; ion<non_; ion++) {
-        put_pixel(main_pio, main_sm, color_code);
-        iled++;
-    }
-    while(iled < nled_) {
-        put_pixel(main_pio, main_sm, 0);
-        iled++;
+    if(back_) {
+        pio_.put_pixel(0, nled_-non_);
+        pio_.put_pixel(color_code, non_);
+    } else {
+        pio_.put_pixel(color_code, non_);
+        pio_.put_pixel(0, nled_-non_);
     }
 }
 
@@ -129,20 +119,31 @@ std::vector<SimpleItemValueMenu::MenuItem> MonoColorMenu::make_menu_items()
     menu_items.at(MIP_V)           = {"v/6/V   : Decrease/Set/Increase intensity", 3, "0"};
 
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
+
+    set_nled_value(false);
+    set_non_value(false);
+    set_front_back_value(false);
+    set_r_value(false);
+    set_g_value(false);
+    set_b_value(false);
+    set_h_value(false);
+    set_s_value(false);
+    set_v_value(false);
+
     return menu_items;
 }
 
 bool MonoColorMenu::event_loop_starting(int& return_code)
 {
+    pio_.activate_program();
     send_color_string();
     return true;
 }
 
 void MonoColorMenu::event_loop_finishing(int& return_code)
 {
-    for(int iled=0; iled<nled_; iled++) {
-        put_pixel(main_pio, main_sm, 0);
-    }
+    pio_.put_pixel(0, nled_);
+    pio_.deactivate_program();
 }
 
 bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
