@@ -29,6 +29,7 @@ private:
         MIP_S,
         MIP_V,
         MIP_Z,
+        MIP_W,
         MIP_EXIT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
     };
