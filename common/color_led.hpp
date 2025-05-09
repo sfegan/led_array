@@ -17,7 +17,14 @@ class SerialPIO {
 public:
     SerialPIO(uint pin, uint baudrate = 800000);
     ~SerialPIO();
-    void set_pin(uint pin, uint baudrate = 800000);
+
+    PIO pio() const { return pio_; }
+    uint sm() const { return sm_; }
+    uint pin() const { return pin_; }
+    uint baudrate() const { return baudrate_; }
+
+    void set_pin(uint pin);
+    void set_baudrate(uint baudrate);
     
     void activate_program();
     void deactivate_program();
@@ -32,9 +39,6 @@ public:
             pio_sm_put_blocking(pio_, sm_, pixel_code);
         }
     }
-    PIO pio() const { return pio_; }
-    uint sm() const { return sm_; }
-    uint pin() const { return pin_; }
 
 private:
     SerialPIO(const SerialPIO&) = delete;

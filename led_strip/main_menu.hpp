@@ -17,11 +17,17 @@ public:
 
 private:
     enum MenuItemPositions {
+        MIP_PIN,
+        MIP_BAUDRATE,
+        MIP_BLANK,
         MIP_MONO_COLOR,
         MIP_BI_COLOR,
         MIP_REBOOT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
     };
+
+    void set_pin_value(bool draw = true);
+    void set_baudrate_value(bool draw = true);
 
     static std::vector<MenuItem> make_menu_items();
 

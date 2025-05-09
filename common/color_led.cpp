@@ -78,13 +78,17 @@ SerialPIO::~SerialPIO()
     }   
 }
 
-void SerialPIO::set_pin(uint pin, uint baudrate)
+void SerialPIO::set_pin(uint pin)
 {
     hard_assert(!program_activated_);
     pin_ = pin;
+}
+
+void SerialPIO::set_baudrate(uint baudrate)
+{
+    hard_assert(!program_activated_);
     baudrate_ = baudrate;
 }   
-
 
 void SerialPIO::activate_program()
 {
