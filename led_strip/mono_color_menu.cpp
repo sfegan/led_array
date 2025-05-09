@@ -19,6 +19,16 @@ MonoColorMenu::MonoColorMenu(SerialPIO& pio):
     pio_(pio)
 {
     timer_interval_us_ = 1000000; // 1Hz
+    
+    set_nled_value(false);
+    set_non_value(false);
+    set_front_back_value(false);
+    set_r_value(false);
+    set_g_value(false);
+    set_b_value(false);
+    set_h_value(false);
+    set_s_value(false);
+    set_v_value(false);
 }
 
 void MonoColorMenu::set_nled_value(bool draw) 
@@ -121,16 +131,6 @@ std::vector<SimpleItemValueMenu::MenuItem> MonoColorMenu::make_menu_items()
     menu_items.at(MIP_V)           = {"v/6/V   : Decrease/Set/Increase intensity", 3, "0"};
 
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
-
-    set_nled_value(false);
-    set_non_value(false);
-    set_front_back_value(false);
-    set_r_value(false);
-    set_g_value(false);
-    set_b_value(false);
-    set_h_value(false);
-    set_s_value(false);
-    set_v_value(false);
 
     return menu_items;
 }
