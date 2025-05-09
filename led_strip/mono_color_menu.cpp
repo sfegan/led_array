@@ -133,6 +133,19 @@ std::vector<SimpleItemValueMenu::MenuItem> MonoColorMenu::make_menu_items()
     return menu_items;
 }
 
+bool MonoColorMenu::event_loop_starting(int& return_code)
+{
+    send_color_string();
+    return true;
+}
+
+void MonoColorMenu::event_loop_finishing(int& return_code)
+{
+    for(int iled=0; iled<nled_; iled++) {
+        put_pixel(main_pio, main_sm, 0);
+    }
+}
+
 bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
     const std::vector<std::string>& escape_sequence_parameters,
     absolute_time_t& next_timer)

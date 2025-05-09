@@ -10,6 +10,8 @@ class MonoColorMenu: public SimpleItemValueMenu {
 public:
     MonoColorMenu();
     virtual ~MonoColorMenu() { }
+    bool event_loop_starting(int& return_code) final;
+    void event_loop_finishing(int& return_code) final;
     bool process_key_press(int key, int key_count, int& return_code,
         const std::vector<std::string>& escape_sequence_parameters, absolute_time_t& next_timer) final;
     bool process_timer(bool controller_is_connected, int& return_code, absolute_time_t& next_timer) final;
