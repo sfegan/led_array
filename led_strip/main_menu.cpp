@@ -44,7 +44,9 @@ bool MainMenu::process_key_press(int key, int key_count, int& return_code,
     case 'M': 
     case 'm': 
         {
+            puts("Instantating mono-color menu");
             MonoColorMenu menu(pio_);
+            puts("Starting event loop");
             menu.event_loop();
             this->redraw();
         }
