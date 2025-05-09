@@ -149,7 +149,7 @@ std::vector<SimpleItemValueMenu::MenuItem> MonoColorMenu::make_menu_items()
     std::vector<SimpleItemValueMenu::MenuItem> menu_items(MIP_NUM_ITEMS);
     menu_items.at(MIP_NLED)        = {"+/N/-   : Decrease/Set/Increase number of LEDs in strip", 4, "0"};
     menu_items.at(MIP_NON)         = {"</n/>   : Decrease/Set/Increase number of illuminated LEDs", 4, "0"};
-    menu_items.at(MIP_NLED)        = {"f       : Toggle between front and back", 5, "FRONT"};
+    menu_items.at(MIP_FRONT_BACK)  = {"f       : Toggle between front and back", 5, "FRONT"};
 
     menu_items.at(MIP_R)           = {"r/1/R   : Decrease/Set/Increase red", 3, "0"};
     menu_items.at(MIP_G)           = {"g/2/G   : Decrease/Set/Increase green", 3, "0"};
