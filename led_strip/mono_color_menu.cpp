@@ -88,6 +88,11 @@ void MonoColorMenu::transfer_rgb_to_hsv(bool draw)
         h_ = 0;
         s_ = 0;
         v_ = static_cast<int>(max_val * 255);
+
+        set_h_value(draw);
+        set_s_value(draw);
+        set_v_value(draw);
+
         return;
     }
 
