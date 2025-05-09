@@ -26,6 +26,18 @@ void MonoColorMenu::set_nled_value(bool draw)
     if(draw)draw_item_value(MIP_NLED);
 }
 
+void MonoColorMenu::set_non_value(bool draw) 
+{ 
+    menu_items_[MIP_NON].value = std::to_string(non_); 
+    if(draw)draw_item_value(MIP_NON);
+}
+
+void MonoColorMenu::set_front_back_value(bool draw) 
+{ 
+    menu_items_[MIP_FRONT_BACK].value = back_ ? "BACK" : "FRONT"; 
+    if(draw)draw_item_value(MIP_FRONT_BACK);
+}
+
 void MonoColorMenu::set_r_value(bool draw) 
 { 
     menu_items_[MIP_R].value = std::to_string(r_); 
@@ -135,7 +147,9 @@ void MonoColorMenu::send_color_string()
 std::vector<SimpleItemValueMenu::MenuItem> MonoColorMenu::make_menu_items() 
 {
     std::vector<SimpleItemValueMenu::MenuItem> menu_items(MIP_NUM_ITEMS);
-    menu_items.at(MIP_NLED)        = {"</n/>   : Decrease/Set/Increase number of LEDs", 4, "0"};
+    menu_items.at(MIP_NLED)        = {"+/N/-   : Decrease/Set/Increase number of LEDs in strip", 4, "0"};
+    menu_items.at(MIP_NON)         = {"</n/>   : Decrease/Set/Increase number of illuminated LEDs", 4, "0"};
+    menu_items.at(MIP_NLED)        = {"f       : Toggle between front and back", 5, "FRONT"};
 
     menu_items.at(MIP_R)           = {"r/1/R   : Decrease/Set/Increase red", 3, "0"};
     menu_items.at(MIP_G)           = {"g/2/G   : Decrease/Set/Increase green", 3, "0"};
@@ -154,26 +168,59 @@ bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
     absolute_time_t& next_timer)
 {
     switch(key) {
-    case '>':
+    case '+':
         if(increase_value_in_range(nled_, MAX_PIXELS, (key_count >= 15 ? 5 : 1), key_count==1)) {
-            send_color_string();
             set_nled_value();
+            send_color_string();
         }
         break;
-    case '<':
+    case '-':
         if(decrease_value_in_range(nled_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
-            send_color_string();
             set_nled_value();
+            if(non_ > nled_) {
+                non_ = nled_;
+                set_non_value();
+            }
+            send_color_string();
         }
         break;
     case 'N':
-    case 'n':
         if(InplaceInputMenu::input_value_in_range(nled_, 0, MAX_PIXELS, this, MIP_NLED, 4)) {
+            if(non_ > nled_) {
+                non_ = nled_;
+                set_non_value();
+            }
             send_color_string();
         }
         set_nled_value();
         break;
 
+    case '>':
+        if(increase_value_in_range(non_, nled_, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_non_value();
+            send_color_string();
+        }
+        break;
+    case '<':
+        if(decrease_value_in_range(non_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_non_value();
+            send_color_string();
+        }
+        break;
+    case 'n':
+        if(InplaceInputMenu::input_value_in_range(non_, nled_, MAX_PIXELS, this, MIP_NON, 4)) {
+            send_color_string();
+        }
+        set_non_value();
+        break;
+
+    case 'F':
+    case 'f':
+        back_ = !back_;
+        set_front_back_value();
+        send_color_string();
+        break;   
+        
     case 'R':
         if(increase_value_in_range(r_, 255, (key_count >= 15 ? 5 : 1), key_count==1)) {
             send_color_string();
@@ -240,7 +287,7 @@ bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
 
     case 'H':
         if(increase_value_in_range(h_, 720, (key_count >= 15 ? 5 : 1), key_count==1)) {
-            if(h_ > 360) {
+            if(h_ >= 360) {
                 h_ -= 360;
             }
             set_h_value();
