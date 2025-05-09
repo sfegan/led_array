@@ -130,6 +130,8 @@ std::vector<SimpleItemValueMenu::MenuItem> MonoColorMenu::make_menu_items()
     menu_items.at(MIP_S)           = {"s/5/S   : Decrease/Set/Increase saturation", 3, "0"};
     menu_items.at(MIP_V)           = {"v/6/V   : Decrease/Set/Increase intensity", 3, "0"};
 
+    menu_items.at(MIP_V)           = {"z       : Zero all color components", 0, ""};
+
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
     return menu_items;
@@ -268,6 +270,23 @@ bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
             transfer_rgb_to_hsv();
         }
         set_b_value();
+        break;
+
+    case 'z':
+    case 'Z':
+        r_ = 0;
+        g_ = 0;
+        b_ = 0;
+        h_ = 0;
+        s_ = 0;
+        v_ = 0;
+        set_r_value();
+        set_g_value();
+        set_b_value();
+        set_h_value();
+        set_s_value();
+        set_v_value();
+        send_color_string();
         break;
 
     case 'H':

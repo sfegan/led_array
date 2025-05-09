@@ -28,6 +28,7 @@ private:
         MIP_H,
         MIP_S,
         MIP_V,
+        MIP_Z,
         MIP_EXIT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
     };
@@ -51,7 +52,7 @@ private:
     void transfer_hsv_to_rgb(bool draw = true);    
 
     SerialPIO& pio_;
-    
+
     int nled_ = 0;
     int non_ = 0;
     bool back_ = false;
