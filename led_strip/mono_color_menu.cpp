@@ -93,6 +93,7 @@ void MonoColorMenu::transfer_hsv_to_rgb(bool draw)
 
 void MonoColorMenu::send_color_string()
 {
+    puts("Sending color string .....");
     uint32_t color_code = rgb_to_grbz(r_, g_, b_);
     if(back_) {
         pio_.put_pixel(0, nled_-non_);
@@ -101,6 +102,7 @@ void MonoColorMenu::send_color_string()
         pio_.put_pixel(color_code, non_);
         pio_.put_pixel(0, nled_-non_);
     }
+    puts("..... color string sent");
 }
 
 std::vector<SimpleItemValueMenu::MenuItem> MonoColorMenu::make_menu_items() 

@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 
 #include <hardware/pio.h>
 #include <hardware/clocks.h>
@@ -87,18 +88,22 @@ void SerialPIO::set_pin(uint pin, uint baudrate)
 
 void SerialPIO::activate_program()
 {
+    puts("Activating WS2812 program .....");
     hard_assert(!program_activated_);
     bool success = pio_claim_free_sm_and_add_program_for_gpio_range(
         &ws2812_program, &pio_, &sm_, &offset_, pin_, 1, true);
     hard_assert(success);
     ws2812_program_init(pio_, sm_, offset_, pin_, baudrate_, false);
     program_activated_ = true;
+    puts("..... WS2812 program activated");
 }
 
 void SerialPIO::deactivate_program()
 {
+    puts("Deactivating WS2812 program .....");
     hard_assert(program_activated_);
     pio_remove_program_and_unclaim_sm(
         &ws2812_program, pio_, sm_, offset_);
     program_activated_ = false;
+    puts("..... WS2812 program deactivated");
 }
