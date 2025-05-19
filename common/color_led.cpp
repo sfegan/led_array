@@ -103,6 +103,7 @@ void SerialPIO::activate_program()
     hard_assert(!program_activated_);
     bool success = pio_claim_free_sm_and_add_program_for_gpio_range(
         &ws2812_program, &pio_, &sm_, &offset_, pin_, 1, true);
+    pio_sm_clear_fifos(pio_, sm_);
     hard_assert(success);
     ws2812_program_init(pio_, sm_, offset_, pin_, baudrate_, false);
     program_activated_ = true;
@@ -113,6 +114,9 @@ void SerialPIO::deactivate_program()
 {
     // puts("Deactivating WS2812 program .....");
     hard_assert(program_activated_);
+    while(unsigned iloop=0; iloop++<1000000 and !pio_sm_is_tx_fifo_empty()) {
+        // wait for the TX FIFO to be empty
+    }
     pio_remove_program_and_unclaim_sm(
         &ws2812_program, pio_, sm_, offset_);
     program_activated_ = false;
