@@ -24,27 +24,33 @@ BiColorMenu::BiColorMenu(SerialPIO& pio):
     c0_.redraw(false);
 }
 
+uint32_t BiColorMenu::color_code(int iled) 
+{
+    iled %= period_;
+    float fperiod = float(period_);
+    float xx = 100.0f / (fperiod * (100 - hold_));
+    float fled = float(iled);
+    float x = std::min(fled * xx, 1.0f - (fled - 0.5f*fperiod) * xx);
+    x = std::max(x, 0.0f);
+    x = std::min(x, 1.0f);
+    float r = float(c0_.r())*x + float(c1_.r())*(1-x);
+    float g = float(c0_.g())*x + float(c1_.g())*(1-x);
+    float b = float(c0_.b())*x + float(c1_.b())*(1-x);
+    uint32_t color_code = rgb_to_grbz(r, g, b);
+    return color_code;
+}
+
 void BiColorMenu::send_color_string()
 {
     // puts("Sending color string .....");
     if(pio_.back()) {
         pio_.put_pixel(0, pio_.nled()-pio_.non());
-        for(int i=0; i<pio_.non(); i++) {
-            float x = float(i) / float(pio_.non());
-            float r = float(c0_.r())*x + float(c1_.r())*(1-x);
-            float g = float(c0_.g())*x + float(c1_.g())*(1-x);
-            float b = float(c0_.b())*x + float(c1_.b())*(1-x);
-            uint32_t color_code = rgb_to_grbz(r, g, b);
-            pio_.put_pixel(color_code, 1);
+        for(int iled=pio_.non()-1; iled>0; iled--) {
+            pio_.put_pixel(color_code(iled), 1);
         }
     } else {
-        for(int i=0; i<pio_.non(); i++) {
-            float x = float(i) / float(pio_.non());
-            float g = float(c1_.g())*x + float(c0_.g())*(1-x);
-            float r = float(c1_.r())*x + float(c0_.r())*(1-x);
-            float b = float(c1_.b())*x + float(c0_.b())*(1-x);
-            uint32_t color_code = rgb_to_grbz(r, g, b);
-            pio_.put_pixel(color_code, 1);
+        for(int iled=0; iled<pio_.non(); iled++) {
+            pio_.put_pixel(color_code(iled), 1);
         }
         pio_.put_pixel(0, pio_.nled()-pio_.non());
     }
@@ -60,6 +66,9 @@ std::vector<SimpleItemValueMenu::MenuItem> BiColorMenu::make_menu_items()
 
     RGBHSVMenuItems::make_menu_items(menu_items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
 
+    menu_items.at(MIP_PERIOD)      = {"-/p/+   : Set transition period in LEDs", 5, "20"};
+    menu_items.at(MIP_HOLD)        = {"[/h/]   : Set hold percentage", 3, "0"};
+
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
     return menu_items;
@@ -69,6 +78,18 @@ void BiColorMenu::set_cset_value(bool draw)
 {
     menu_items_[MIP_SWITCH].value = std::to_string(cset_);
     if(draw)draw_item_value(MIP_SWITCH);
+}
+
+void BiColorMenu::set_period_value(bool draw)
+{
+    menu_items_[MIP_PERIOD].value = std::to_string(period_);
+    if(draw)draw_item_value(MIP_PERIOD);
+}
+
+void BiColorMenu::set_hold_value(bool draw)
+{
+    menu_items_[MIP_HOLD].value = std::to_string(hold_);
+    if(draw)draw_item_value(MIP_HOLD);
 }
 
 bool BiColorMenu::event_loop_starting(int& return_code)
@@ -106,6 +127,46 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         cset_ = 1 - cset_;
         set_cset_value();
         c_alt->redraw(true);
+        break;
+
+    case '+':
+        if(increase_value_in_range(period_, 2*pio_.non(), (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_period_value();
+            send_color_string();
+        }
+        break;
+    case '-':
+        if(decrease_value_in_range(period_, 2, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_period_value();
+            send_color_string();
+        }
+        break; 
+    case 'p':
+    case 'P':
+        if(InplaceInputMenu::input_value_in_range(period_, 2, 2*pio_.non(), this, MIP_PERIOD, 5)) {
+            send_color_string();
+        }
+        set_period_value();
+        break;
+
+    case ']':
+        if(increase_value_in_range(hold_, 49, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_hold_value();
+            send_color_string();
+        }
+        break;
+    case '[':
+        if(decrease_value_in_range(hold_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_hold_value();
+            send_color_string();
+        }
+        break; 
+    case 'h':
+    case 'H':
+        if(InplaceInputMenu::input_value_in_range(hold_, 0, 49, this, MIP_PERIOD, 3)) {
+            send_color_string();
+        }
+        set_hold_value();
         break;
 
     case 'q':

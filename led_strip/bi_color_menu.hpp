@@ -26,6 +26,8 @@ private:
         MIP_H,
         MIP_S,
         MIP_V,
+        MIP_PERIOD,
+        MIP_HOLD,
         MIP_EXIT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
     };
@@ -33,6 +35,10 @@ private:
     std::vector<MenuItem> make_menu_items();
 
     void set_cset_value(bool draw = true);
+    void set_period_value(bool draw = true);
+    void set_hold_value(bool draw = true);
+    
+    uint32_t color_code(int iled);
     void send_color_string();
 
     SerialPIO& pio_;
@@ -40,4 +46,6 @@ private:
     RGBHSVMenuItems c1_;
 
     int cset_ = 0;
+    int period_ = 20;
+    int hold_ = 0;
 };
