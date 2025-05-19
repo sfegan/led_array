@@ -19,9 +19,6 @@ public:
 
 private:
     enum MenuItemPositions {
-        MIP_NLED,
-        MIP_NON,
-        MIP_FRONT_BACK,
         MIP_R,
         MIP_G,
         MIP_B,
@@ -35,10 +32,6 @@ private:
     };
 
     std::vector<MenuItem> make_menu_items();
-
-    void set_nled_value(bool draw = true);
-    void set_non_value(bool draw = true);
-    void set_front_back_value(bool draw = true);
 
     void set_r_value(bool draw = true);
     void set_g_value(bool draw = true);
@@ -54,9 +47,6 @@ private:
 
     SerialPIO& pio_;
 
-    int nled_ = 0;
-    int non_ = 0;
-    bool back_ = false;
     int r_ = 0;
     int g_ = 0;
     int b_ = 0;
