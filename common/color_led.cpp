@@ -178,9 +178,9 @@ std::vector<SerialPIOMenu::MenuItem> SerialPIOMenu::make_menu_items()
     std::vector<MenuItem> menu_items(MIP_NUM_ITEMS);
     menu_items.at(MIP_PIN)         = {"P       : Set GPIO pin", 2, "0"};
     menu_items.at(MIP_BAUDRATE)    = {"B       : Set baud rate", 8, "0"};
-    menu_items.at(MIP_NLED)        = {"N       : Set number of LEDs", 4, "0"};
-    menu_items.at(MIP_NON)         = {"n       : Set number of active LEDs", 4, "0"};
-    menu_items.at(MIP_BACK)        = {"f       : Set front/back", 0, ""};
+    menu_items.at(MIP_NLED)        = {"+/N/-   : Decrease/Set/Increase number of LEDs", 4, "0"};
+    menu_items.at(MIP_NON)         = {"</n/>   : Decrease/Set/Increase number of active LEDs", 4, "0"};
+    menu_items.at(MIP_BACK)        = {"f       : Set front/back", 5, "FRONT"};
     menu_items.at(MIP_LAMP_TEST)   = {"L       : Lamp test", 4, ""};
     menu_items.at(MIP_EXIT)        = {"q       : Quit", 0, ""};
     return menu_items;
@@ -192,15 +192,15 @@ void SerialPIOMenu::send_color_string()
     if(lamp_test_cycle_ < 0 or non_ == 0) {
         put_pixel(0, nled_);
     } else {
-        uint32_t color_code = rgb_to_grbz(0, 15, 0) >> (lamp_test_cycle_*8);
+        uint32_t color_code = rgb_to_grbz(0, 7, 0) >> (lamp_test_cycle_*8);
         if(back_) {
             put_pixel(0, nled_-non_);
             put_pixel(color_code, non_ - lamp_test_count_ - 1);
-            put_pixel(color_code | (color_code<<4), 1);
+            put_pixel(color_code<<4, 1);
             put_pixel(color_code, lamp_test_count_);
         } else {
             put_pixel(color_code, lamp_test_count_);
-            put_pixel(color_code | (color_code<<4), 1);
+            put_pixel(color_code<<4, 1);
             put_pixel(color_code, non_ - lamp_test_count_ - 1);
             put_pixel(0, nled_-non_);
         }
@@ -213,6 +213,7 @@ void SerialPIOMenu::enable_lamp_test()
     if(lamp_test_cycle_ < 0) {
         activate_program();
         lamp_test_cycle_ = 0;
+        lamp_test_count_ = 0;
         send_color_string();        
     }
 }
@@ -221,6 +222,7 @@ void SerialPIOMenu::disable_lamp_test()
 {
     if(lamp_test_cycle_ >= 0) {
         lamp_test_cycle_ = -1;
+        lamp_test_count_ = 0;
         send_color_string();        
         deactivate_program();
     }
@@ -274,7 +276,7 @@ bool SerialPIOMenu::process_key_press(int key, int key_count, int& return_code,
                 non_ = nled_;
                 set_non_value();
                 if(lamp_test_cycle_ >= 0) {
-                    lamp_test_cycle_ = std::min(lamp_test_cycle_, non_ - 1);
+                    lamp_test_count_ = std::min(lamp_test_count_, non_ - 1);
                     send_color_string();
                 }
             }
@@ -287,7 +289,7 @@ bool SerialPIOMenu::process_key_press(int key, int key_count, int& return_code,
                 set_non_value();
             }
             if(lamp_test_cycle_ >= 0) {
-                lamp_test_cycle_ = std::min(lamp_test_cycle_, non_ - 1);
+                lamp_test_count_ = std::min(lamp_test_count_, non_ - 1);
                 send_color_string();
             }
         }
@@ -298,7 +300,6 @@ bool SerialPIOMenu::process_key_press(int key, int key_count, int& return_code,
         if(increase_value_in_range(non_, nled_, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_non_value();
             if(lamp_test_cycle_ >= 0) {
-                lamp_test_cycle_ = std::min(lamp_test_cycle_, non_ - 1);
                 send_color_string();
             }
         }
@@ -307,7 +308,7 @@ bool SerialPIOMenu::process_key_press(int key, int key_count, int& return_code,
         if(decrease_value_in_range(non_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_non_value();
             if(lamp_test_cycle_ >= 0) {
-                lamp_test_cycle_ = std::min(lamp_test_cycle_, non_ - 1);
+                lamp_test_count_ = std::min(lamp_test_count_, non_ - 1);
                 send_color_string();
             }
         }
@@ -315,7 +316,7 @@ bool SerialPIOMenu::process_key_press(int key, int key_count, int& return_code,
     case 'n':
         if(InplaceInputMenu::input_value_in_range(non_, 0, nled_, this, MIP_NON, 4)) {
             if(lamp_test_cycle_ >= 0) {
-                lamp_test_cycle_ = std::min(lamp_test_cycle_, non_ - 1);
+                lamp_test_count_ = std::min(lamp_test_count_, non_ - 1);
                 send_color_string();
             }
         }
@@ -372,7 +373,7 @@ bool SerialPIOMenu::process_timer(bool controller_is_connected, int& return_code
 
     if(lamp_test_cycle_ >= 0) {
         lamp_test_count_ += 1;
-        if(int(lamp_test_count_) >= non_) {
+        if(lamp_test_count_ >= non_) {
             lamp_test_count_ = 0;
             lamp_test_cycle_ += 1;
             if(lamp_test_cycle_ == 3) {

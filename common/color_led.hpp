@@ -106,7 +106,7 @@ private:
 
 private:
     int lamp_test_cycle_ = -1;
-    unsigned lamp_test_count_ = 0;
+    int lamp_test_count_ = 0;
     unsigned heartbeat_timer_count_ = 0;
 };
 
