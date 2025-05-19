@@ -183,10 +183,12 @@ public:
     int get_item_value_col(int iitem);
     void redraw() override;
     
-protected:
+    MenuItem& menu_item(unsigned iitem) { return menu_items_[iitem]; }
+
     void draw_item(unsigned iitem);
     void draw_item_value(unsigned iitem);
 
+protected:
     void setup_menu();
 
     std::vector<MenuItem> menu_items_;

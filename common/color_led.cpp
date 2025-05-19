@@ -74,6 +74,256 @@ void hsv_to_rgb(int ih, int is, int iv, int& ir, int& ig, int& ib)
     ib = static_cast<int>(b * 255);
 }
 
+RGBHSVMenuItems::RGBHSVMenuItems(SimpleItemValueMenu& base_menu,
+    int mip_r, int mip_g, int mip_b, int mip_h, int mip_s, int mip_v):
+    base_menu_(base_menu), mip_r_(mip_r), mip_g_(mip_g), mip_b_(mip_b),
+    mip_h_(mip_h), mip_s_(mip_s), mip_v_(mip_v)
+{
+    // nothing to see here
+}
+
+void RGBHSVMenuItems::make_menu_items(
+    std::vector<SimpleItemValueMenu::MenuItem>& menu_items,
+    int mip_r, int mip_g, int mip_b, int mip_h, int mip_s, int mip_v)
+{
+    menu_items.at(mip_r) = {"r/1/R   : Decrease/Set/Increase red", 3, "0"};
+    menu_items.at(mip_g) = {"g/2/G   : Decrease/Set/Increase green", 3, "0"};
+    menu_items.at(mip_b) = {"b/3/B   : Decrease/Set/Increase blue", 3, "0"};
+
+    menu_items.at(mip_h) = {"h/4/H   : Decrease/Set/Increase hue", 3, "0"};
+    menu_items.at(mip_s) = {"s/5/S   : Decrease/Set/Increase saturation", 3, "0"};
+    menu_items.at(mip_v) = {"v/6/V   : Decrease/Set/Increase intensity", 3, "0"};
+}
+
+void RGBHSVMenuItems::redraw(bool draw)
+{
+    set_r_value(draw);
+    set_g_value(draw);
+    set_b_value(draw);
+    set_h_value(draw);
+    set_s_value(draw);
+    set_v_value(draw);
+}
+
+void RGBHSVMenuItems::set_rgb(int r, int g, int b, bool draw)
+{
+    r_ = r;
+    g_ = g;
+    b_ = b;
+    set_r_value(draw);
+    set_g_value(draw);
+    set_b_value(draw);
+    transfer_rgb_to_hsv(draw);
+}
+
+void RGBHSVMenuItems::set_hsv(int h, int s, int v, bool draw)
+{
+    h_ = h;
+    s_ = s;
+    v_ = v;
+    set_h_value(draw);
+    set_s_value(draw);
+    set_v_value(draw);
+    transfer_hsv_to_rgb(draw);
+}
+
+bool RGBHSVMenuItems::process_key_press(int key, int key_count, bool& changed)
+{
+    changed = false;
+    switch(key) {
+    case 'R':
+        if(Menu::increase_value_in_range(r_, 255, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_r_value();
+            transfer_rgb_to_hsv();
+            changed = true;
+        }
+        return true;
+    case 'r':
+        if(Menu::decrease_value_in_range(r_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_r_value();
+            transfer_rgb_to_hsv();
+            changed = true;
+        }
+        return true;
+    case '1':
+        if(InplaceInputMenu::input_value_in_range(r_, 0, 255, &base_menu_, mip_r_, 3)) {
+            transfer_rgb_to_hsv();
+            changed = true;
+        }
+        set_r_value();
+        return true;
+
+    case 'G':
+        if(Menu::increase_value_in_range(g_, 255, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_g_value();
+            transfer_rgb_to_hsv();
+            changed = true;
+        }
+        return true;
+    case 'g':
+        if(Menu::decrease_value_in_range(g_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_g_value();
+            transfer_rgb_to_hsv();
+            changed = true;
+        }
+        return true;
+    case '2':
+        if(InplaceInputMenu::input_value_in_range(g_, 0, 255, &base_menu_, mip_g_, 3)) {
+            transfer_rgb_to_hsv();
+            changed = true;
+        }
+        set_g_value();
+        return true;
+
+    case 'B':
+        if(Menu::increase_value_in_range(b_, 255, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_b_value();
+            transfer_rgb_to_hsv();
+            changed = true;
+        }
+        return true;
+    case 'b':
+        if(Menu::decrease_value_in_range(b_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_b_value();
+            transfer_rgb_to_hsv();
+            changed = true;
+        }
+        return true;
+    case '3':
+        if(InplaceInputMenu::input_value_in_range(b_, 0, 255, &base_menu_, mip_b_, 3)) {
+            transfer_rgb_to_hsv();
+            changed = true;
+        }
+        set_b_value();
+        return true;
+
+    case 'H':
+        if(Menu::increase_value_in_range(h_, 720, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            if(h_ >= 360) {
+                h_ -= 360;
+            }
+            set_h_value();
+            transfer_hsv_to_rgb();
+            changed = true;
+        }
+        return true;
+    case 'h':
+        if(Menu::decrease_value_in_range(h_, -360, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            if(h_ < 0) {
+                h_ += 360;
+            }
+            set_h_value();
+            transfer_hsv_to_rgb();
+            changed = true;
+        }
+        return true;
+    case '4':
+        if(InplaceInputMenu::input_value_in_range(h_, 0, 359, &base_menu_, mip_h_, 3)) {
+            transfer_hsv_to_rgb();
+            changed = true;
+        }
+        set_h_value();
+        return true;
+
+    case 'S':
+        if(Menu::increase_value_in_range(s_, 255, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_s_value();
+            transfer_hsv_to_rgb();
+            changed = true;
+        }
+        return true;
+    case 's':
+        if(Menu::decrease_value_in_range(s_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_s_value();
+            transfer_hsv_to_rgb();
+            changed = true;
+        }
+        return true;
+    case '5':
+        if(InplaceInputMenu::input_value_in_range(s_, 0, 255, &base_menu_, mip_s_, 3)) {
+            transfer_hsv_to_rgb();
+            changed = true;
+        }
+        set_s_value();
+        return true;
+
+    case 'V':
+        if(Menu::increase_value_in_range(v_, 255, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_v_value();
+            transfer_hsv_to_rgb();
+            changed = true;
+        }
+        return true;
+    case 'v':
+        if(Menu::decrease_value_in_range(v_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_v_value();
+            transfer_hsv_to_rgb();
+            changed = true;
+        }
+        return true;
+    case '6':
+        if(InplaceInputMenu::input_value_in_range(v_, 0, 255, &base_menu_, mip_v_, 3)) {
+            transfer_hsv_to_rgb();
+            changed = true;
+        }
+        set_v_value();
+        return true;
+    }
+    return false;
+}
+
+void RGBHSVMenuItems::set_r_value(bool draw)
+{
+    base_menu_.menu_item(mip_r_).value = std::to_string(r_);
+    if(draw)base_menu_.draw_item_value(mip_r_);
+}
+
+void RGBHSVMenuItems::set_g_value(bool draw)
+{
+    base_menu_.menu_item(mip_g_).value = std::to_string(g_);
+    if(draw)base_menu_.draw_item_value(mip_g_);
+}
+
+void RGBHSVMenuItems::set_b_value(bool draw)
+{
+    base_menu_.menu_item(mip_b_).value = std::to_string(b_);
+    if(draw)base_menu_.draw_item_value(mip_b_);
+}
+
+void RGBHSVMenuItems::set_h_value(bool draw)
+{
+    base_menu_.menu_item(mip_h_).value = std::to_string(h_);
+    if(draw)base_menu_.draw_item_value(mip_h_);
+}
+
+void RGBHSVMenuItems::set_s_value(bool draw)
+{
+    base_menu_.menu_item(mip_s_).value = std::to_string(s_);
+    if(draw)base_menu_.draw_item_value(mip_s_);
+}
+
+void RGBHSVMenuItems::set_v_value(bool draw)
+{
+    base_menu_.menu_item(mip_v_).value = std::to_string(v_);
+    if(draw)base_menu_.draw_item_value(mip_v_);
+}
+
+void RGBHSVMenuItems::transfer_rgb_to_hsv(bool draw)
+{
+    rgb_to_hsv(r_, g_, b_, h_, s_, v_);
+    set_h_value(draw);
+    set_s_value(draw);
+    set_v_value(draw);
+}
+
+void RGBHSVMenuItems::transfer_hsv_to_rgb(bool draw)
+{
+    hsv_to_rgb(h_, s_, v_, r_, g_, b_);
+    set_r_value(draw);
+    set_g_value(draw);
+    set_b_value(draw);
+}
+
 SerialPIO::SerialPIO(int pin, int baudrate): pin_(pin), baudrate_(baudrate)
 {
     // nothing to see here
@@ -269,12 +519,12 @@ bool SerialPIOMenu::process_key_press(int key, int key_count, int& return_code,
         break;
 
     case '+':
-        if(increase_value_in_range(nled_, MAX_PIXELS, (key_count >= 15 ? 5 : 1), key_count==1)) {
+        if(Menu::increase_value_in_range(nled_, MAX_PIXELS, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_nled_value();
         }
         break;
     case '-':
-        if(decrease_value_in_range(nled_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+        if(Menu::decrease_value_in_range(nled_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_nled_value();
             if(non_ > nled_) {
                 non_ = nled_;
@@ -301,7 +551,7 @@ bool SerialPIOMenu::process_key_press(int key, int key_count, int& return_code,
         break;
 
     case '>':
-        if(increase_value_in_range(non_, nled_, (key_count >= 15 ? 5 : 1), key_count==1)) {
+        if(Menu::increase_value_in_range(non_, nled_, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_non_value();
             if(lamp_test_cycle_ >= 0) {
                 send_color_string();
@@ -309,7 +559,7 @@ bool SerialPIOMenu::process_key_press(int key, int key_count, int& return_code,
         }
         break;
     case '<':
-        if(decrease_value_in_range(non_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+        if(Menu::decrease_value_in_range(non_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_non_value();
             if(lamp_test_cycle_ >= 0) {
                 lamp_test_count_ = std::min(lamp_test_count_, non_ - 1);

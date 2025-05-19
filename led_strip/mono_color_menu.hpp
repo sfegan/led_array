@@ -33,24 +33,8 @@ private:
 
     std::vector<MenuItem> make_menu_items();
 
-    void set_r_value(bool draw = true);
-    void set_g_value(bool draw = true);
-    void set_b_value(bool draw = true);
-
-    void set_h_value(bool draw = true);
-    void set_s_value(bool draw = true);
-    void set_v_value(bool draw = true); 
-
     void send_color_string();
-    void transfer_rgb_to_hsv(bool draw = true);
-    void transfer_hsv_to_rgb(bool draw = true);    
 
     SerialPIO& pio_;
-
-    int r_ = 0;
-    int g_ = 0;
-    int b_ = 0;
-    int h_ = 0;
-    int s_ = 0;
-    int v_ = 0;
+    RGBHSVMenuItems rgbhsv_;
 };

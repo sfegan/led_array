@@ -12,9 +12,53 @@ inline uint32_t rgb_to_grbz(uint32_t r, uint32_t g, uint32_t b) {
 void rgb_to_hsv(int r, int g, int b, int& h, int& s, int& v);
 void hsv_to_rgb(int h, int s, int v, int& r, int& g, int& b);
 
-inline void put_pixel(PIO pio, uint sm, int pixel_code) {
-    pio_sm_put_blocking(pio, sm, pixel_code);
-}
+class RGBHSVMenuItems {
+public:
+    RGBHSVMenuItems(SimpleItemValueMenu& base_menu,
+        int mip_r, int mip_g, int mip_b, int mip_h, int mip_s, int mip_v);
+
+    static void make_menu_items(
+        std::vector<SimpleItemValueMenu::MenuItem>& menu_items,
+        int mip_r, int mip_g, int mip_b, int mip_h, int mip_s, int mip_v);
+
+    void redraw(bool draw = true);
+    bool process_key_press(int key, int key_count, bool& changed);
+
+    int r() const { return r_; }
+    int g() const { return g_; }
+    int b() const { return b_; }
+    int h() const { return h_; }
+    int s() const { return s_; }
+    int v() const { return v_; }
+
+    void set_rgb(int r, int g, int b, bool draw = true);
+    void set_hsv(int h, int s, int v, bool draw = true);
+
+private:
+    SimpleItemValueMenu& base_menu_;
+    int mip_r_ = 0;
+    int mip_g_ = 0;
+    int mip_b_ = 0;
+    int mip_h_ = 0;
+    int mip_s_ = 0;
+    int mip_v_ = 0;
+
+    void set_r_value(bool draw = true);
+    void set_g_value(bool draw = true);
+    void set_b_value(bool draw = true);
+    void set_h_value(bool draw = true);
+    void set_s_value(bool draw = true);
+    void set_v_value(bool draw = true);
+    void transfer_rgb_to_hsv(bool draw = true);
+    void transfer_hsv_to_rgb(bool draw = true);
+
+    int r_ = 0;
+    int g_ = 0;
+    int b_ = 0;
+    int h_ = 0;
+    int s_ = 0;
+    int v_ = 0;
+};
 
 class SerialPIO {
 public:
