@@ -107,7 +107,7 @@ std::vector<SimpleItemValueMenu::MenuItem> MonoColorMenu::make_menu_items()
     menu_items.at(MIP_V)           = {"v/6/V   : Decrease/Set/Increase intensity", 3, "0"};
 
     menu_items.at(MIP_Z)           = {"z       : Zero all color components (black)", 0, ""};
-    menu_items.at(MIP_W)           = {"w       : Max all color components (white)", 0, ""};
+    menu_items.at(MIP_W)           = {"W       : Max all color components (white)", 0, ""};
 
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
@@ -213,7 +213,6 @@ bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
         set_v_value();
         send_color_string();
         break;
-    case 'w':
     case 'W':
         r_ = 255;
         g_ = 255;
