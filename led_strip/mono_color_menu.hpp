@@ -36,5 +36,5 @@ private:
     void send_color_string();
 
     SerialPIO& pio_;
-    RGBHSVMenuItems rgbhsv_;
+    RGBHSVMenuItems c_;
 };

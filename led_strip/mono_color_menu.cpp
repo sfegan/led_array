@@ -16,16 +16,16 @@ namespace {
 
 MonoColorMenu::MonoColorMenu(SerialPIO& pio):
     SimpleItemValueMenu(make_menu_items(), "Mono color menu"),
-    pio_(pio), rgbhsv_(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V)
+    pio_(pio), c_(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V)
 {
     timer_interval_us_ = 1000000; // 1Hz
-    rgbhsv_.redraw(false);
+    c_.redraw(false);
 }
 
 void MonoColorMenu::send_color_string()
 {
     // puts("Sending color string .....");
-    uint32_t color_code = rgb_to_grbz(rgbhsv_.r(), rgbhsv_.g(), rgbhsv_.b());
+    uint32_t color_code = rgb_to_grbz(c_.r(), c_.g(), c_.b());
     if(pio_.back()) {
         pio_.put_pixel(0, pio_.nled()-pio_.non());
         pio_.put_pixel(color_code, pio_.non());
@@ -41,7 +41,7 @@ std::vector<SimpleItemValueMenu::MenuItem> MonoColorMenu::make_menu_items()
 {
     std::vector<SimpleItemValueMenu::MenuItem> menu_items(MIP_NUM_ITEMS);
 
-    rgbhsv_.make_menu_items(menu_items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
+    RGBHSVMenuItems::make_menu_items(menu_items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
 
     menu_items.at(MIP_Z)           = {"z       : Zero all color components (black)", 0, ""};
     menu_items.at(MIP_W)           = {"W       : Max all color components (white)", 0, ""};
@@ -70,7 +70,7 @@ bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
     absolute_time_t& next_timer)
 {
     bool changed = false;
-    if(rgbhsv_.process_key_press(key, key_count, changed)) {
+    if(c_.process_key_press(key, key_count, changed)) {
         if(changed) {
             send_color_string();
         }
@@ -80,11 +80,11 @@ bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
     switch(key) {
     case 'z':
     case 'Z':
-        rgbhsv_.set_rgb(0, 0, 0);
+        c_.set_rgb(0, 0, 0);
         send_color_string();
         break;
     case 'W':
-        rgbhsv_.set_rgb(255, 255, 255);
+        c_.set_rgb(255, 255, 255);
         send_color_string();
         break;    
 
