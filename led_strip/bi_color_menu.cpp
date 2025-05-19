@@ -28,7 +28,7 @@ uint32_t BiColorMenu::color_code(int iled)
 {
     iled %= period_;
     float fperiod = float(period_);
-    float xx = 100.0f / (fperiod * (100 - hold_));
+    float xx = 100.0f / (fperiod * (100 - 2*hold_));
     float fled = float(iled);
     float x = std::min(fled * xx, 1.0f - (fled - 0.5f*fperiod) * xx);
     x = std::max(x, 0.0f);
