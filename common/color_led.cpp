@@ -115,9 +115,7 @@ void SerialPIO::deactivate_program()
 {
     // puts("Deactivating WS2812 program .....");
     hard_assert(program_activated_);
-    while(!all_pixel_data_sent()) {
-        busy_wait_us(1);
-    }
+    flush();
     pio_remove_program_and_unclaim_sm(
         &ws2812_program, pio_, sm_, offset_);
     program_activated_ = false;

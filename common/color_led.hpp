@@ -40,10 +40,6 @@ public:
     void activate_program();
     void deactivate_program();
 
-    inline bool all_pixel_data_sent() const {
-        return pio_->fdebug & (1 << sm_);
-    }
-
     inline void put_pixel(uint32_t pixel_code) const {
         hard_assert(program_activated_);
         pio_sm_put_blocking(pio_, sm_, pixel_code);
