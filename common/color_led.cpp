@@ -115,8 +115,8 @@ void SerialPIO::deactivate_program()
 {
     // puts("Deactivating WS2812 program .....");
     hard_assert(program_activated_);
-    for(unsigned iloop=0; iloop<1000000 and !pio_sm_is_tx_fifo_empty(pio_, sm_); ++iloop) {
-        // wait for the TX FIFO to be empty
+    while(!all_pixel_data_sent()) {
+        busy_wait_us(1);
     }
     pio_remove_program_and_unclaim_sm(
         &ws2812_program, pio_, sm_, offset_);

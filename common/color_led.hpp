@@ -40,6 +40,10 @@ public:
     void activate_program();
     void deactivate_program();
 
+    inline bool all_pixel_data_sent() const {
+        return pio_->fdebug & (1 << sm_);
+    }
+
     inline void put_pixel(uint32_t pixel_code) const {
         hard_assert(program_activated_);
         pio_sm_put_blocking(pio_, sm_, pixel_code);
@@ -52,10 +56,10 @@ public:
     }
     inline void end_of_string() const {
         hard_assert(program_activated_);
-        for(unsigned iloop=0; iloop<1000000 and !pio_sm_is_tx_fifo_empty(pio_, sm_); ++iloop) {
-            // wait for the TX FIFO to be empty
+        while(!all_pixel_data_sent()) {
+            busy_wait_us(1);
         }
-            busy_wait_us(50);
+        busy_wait_us(50); // + 24000000 / baud_rate_);
     }
 
 protected:
