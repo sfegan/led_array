@@ -10,7 +10,6 @@
 #include <hardware/pio.h>
 #include <hardware/clocks.h>
 
-
 #include "../common/build_date.hpp"
 #include "../common/menu.hpp"
 #include "main_menu.hpp"
