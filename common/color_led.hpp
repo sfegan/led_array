@@ -54,9 +54,12 @@ public:
             pio_sm_put_blocking(pio_, sm_, pixel_code);
         }
     }
-    inline void end_of_string() const {
+    inline void flush() const {
+        uint32_t stall_mask = 1u << (PIO_FDEBUG_TXSTALL_LSB + sm_);
         hard_assert(program_activated_);
-        while(!all_pixel_data_sent()) {
+        pio_->fdebug = stall_mask;
+        busy_wait_us(1);
+        while (!(pio_->fdebug & stall_mask)) {
             busy_wait_us(1);
         }
         busy_wait_us(50); // + 24000000 / baud_rate_);
