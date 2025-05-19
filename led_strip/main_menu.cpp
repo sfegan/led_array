@@ -6,6 +6,7 @@
 #include "main.hpp"
 #include "main_menu.hpp"
 #include "mono_color_menu.hpp"
+#include "bi_color_menu.hpp"
 
 namespace {
     static BuildDate build_date(__DATE__,__TIME__);
@@ -58,11 +59,11 @@ bool MainMenu::process_key_press(int key, int key_count, int& return_code,
         }
         break;
     case 'b': 
-        // {
-        //     BiColorMenu menu;
-        //     menu.event_loop();
-        //     this->redraw();
-        // }
+        {
+            BiColorMenu menu(pio_);
+            menu.event_loop();
+            this->redraw();
+        }
         break;
         
     case 7: /* ctrl-g : secret display of menu parameters - to remove */
