@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include <pico/time.h>
 #include <hardware/pio.h>
 #include <hardware/clocks.h>
 
@@ -209,6 +210,7 @@ void SerialPIOMenu::send_color_string()
             put_pixel(0, nled_-non_);
         }
     }
+    busy_wait_us(1);
     // puts("..... color string sent");
 }
 
