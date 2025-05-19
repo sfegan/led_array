@@ -210,7 +210,7 @@ void SerialPIOMenu::send_color_string()
             put_pixel(0, nled_-non_);
         }
     }
-    busy_wait_us(50);
+    end_of_string();
     // puts("..... color string sent");
 }
 
