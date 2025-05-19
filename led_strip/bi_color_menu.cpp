@@ -45,8 +45,8 @@ void BiColorMenu::send_color_string()
     // puts("Sending color string .....");
     if(pio_.back()) {
         pio_.put_pixel(0, pio_.nled()-pio_.non());
-        for(int iled=pio_.non()-1; iled>0; iled--) {
-            pio_.put_pixel(color_code(iled), 1);
+        for(int iled=pio_.non(); iled>0; ) {
+            pio_.put_pixel(color_code(--iled), 1);
         }
     } else {
         for(int iled=0; iled<pio_.non(); iled++) {
@@ -67,7 +67,7 @@ std::vector<SimpleItemValueMenu::MenuItem> BiColorMenu::make_menu_items()
     RGBHSVMenuItems::make_menu_items(menu_items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
 
     menu_items.at(MIP_PERIOD)      = {"-/p/+   : Set transition period in LEDs", 5, "20"};
-    menu_items.at(MIP_HOLD)        = {"[/h/]   : Set hold percentage", 3, "0"};
+    menu_items.at(MIP_HOLD)        = {"[/m/]   : Set maibtain percentage", 3, "0"};
 
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
@@ -161,9 +161,9 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
             send_color_string();
         }
         break; 
-    case 'h':
-    case 'H':
-        if(InplaceInputMenu::input_value_in_range(hold_, 0, 49, this, MIP_PERIOD, 3)) {
+    case 'm':
+    case 'M':
+        if(InplaceInputMenu::input_value_in_range(hold_, 0, 49, this, MIP_HOLD, 3)) {
             send_color_string();
         }
         set_hold_value();
@@ -173,6 +173,13 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case 'Q':
         return_code = 0;
         return false;
+
+    case 'D':
+        for(int iled=0; iled<pio_.non(); iled++) {
+            std::string s = std::to_string(iled) + ": " + std::to_string(color_code(iled));
+            puts(s.c_str());
+        }
+        break;
 
     default:
         if(key_count==1) {
