@@ -114,7 +114,7 @@ void SerialPIO::deactivate_program()
 {
     // puts("Deactivating WS2812 program .....");
     hard_assert(program_activated_);
-    while(unsigned iloop=0; iloop++<1000000 and !pio_sm_is_tx_fifo_empty()) {
+    for(unsigned iloop=0; iloop<1000000 and !pio_sm_is_tx_fifo_empty(pio_, sm_); ++iloop) {
         // wait for the TX FIFO to be empty
     }
     pio_remove_program_and_unclaim_sm(
@@ -185,7 +185,7 @@ std::vector<SerialPIOMenu::MenuItem> SerialPIOMenu::make_menu_items()
     menu_items.at(MIP_NLED)        = {"+/N/-   : Decrease/Set/Increase number of LEDs", 4, "0"};
     menu_items.at(MIP_NON)         = {"</n/>   : Decrease/Set/Increase number of active LEDs", 4, "0"};
     menu_items.at(MIP_BACK)        = {"f       : Set front/back", 5, "FRONT"};
-    menu_items.at(MIP_LAMP_TEST)   = {"L       : Lamp test", 4, ""};
+    menu_items.at(MIP_LAMP_TEST)   = {"l       : Lamp test", 4, ""};
     menu_items.at(MIP_EXIT)        = {"q       : Quit", 0, ""};
     return menu_items;
 }

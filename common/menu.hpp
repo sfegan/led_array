@@ -16,6 +16,8 @@ public:
 
 class Menu {
 public:
+    Menu(uint64_t timer_interval_us = default_timer_interval_us()) :
+        timer_interval_us_(timer_interval_us) { }
     virtual ~Menu();
     virtual void redraw() = 0;
 
@@ -136,7 +138,8 @@ private:
 class FramedMenu: public Menu
 {
 public:
-    FramedMenu(const std::string& title={}, int frame_h=0, int frame_w=0, int frame_pos=0);
+    FramedMenu(const std::string& title={}, int frame_h=0, int frame_w=0, int frame_pos=0,
+        uint64_t timer_interval_us = Menu::default_timer_interval_us());
     virtual ~FramedMenu();
 
     void redraw() override;

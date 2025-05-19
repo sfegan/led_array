@@ -38,6 +38,8 @@ private:
     std::string value_;
     bool do_highlight_;
     bool blink_on_ = false;
+    int blink_count_ = 0;
+    int blink_interval_ = 0;
     bool first_redraw_ = true;
 };
 

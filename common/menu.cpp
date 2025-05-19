@@ -262,8 +262,8 @@ void Menu::rc_to_value_string(std::string& value, int ar, int ac)
     value = std::string(1, char('A' + ar)) + std::to_string(ac); 
 }
 
-FramedMenu::FramedMenu(const std::string& title, int frame_h, int frame_w, int frame_pos):
-    title_(title), req_h_(frame_h), req_w_(frame_w), req_pos_(frame_pos)
+FramedMenu::FramedMenu(const std::string& title, int frame_h, int frame_w, int frame_pos, uint64_t timer_interval_us):
+    Menu(timer_interval_us), title_(title), req_h_(frame_h), req_w_(frame_w), req_pos_(frame_pos)
 {
     // nothing to see here
 }

@@ -27,11 +27,12 @@ InplaceInputMenu::InplaceInputMenu(RowAndColumnGetter& row_col_getter, unsigned 
 
 InplaceInputMenu::InplaceInputMenu(int r, int c, unsigned max_value_size, ValidInput valid_input, 
         bool do_highlight, Menu* base_menu, RowAndColumnGetter* row_col_getter):
-    Menu(), base_menu_(base_menu), row_col_getter_(row_col_getter),
+    Menu(base_menu ? base_menu->timer_interval_us() : 10000 /* 100Hz */), 
+    base_menu_(base_menu), row_col_getter_(row_col_getter),
     r_(r), c_(c), max_value_size_(max_value_size), valid_input_(valid_input),
-    do_highlight_(do_highlight)
+    do_highlight_(do_highlight), blink_interval_(std::max(1000000ULL / timer_interval_us(), 1ULL))
 {
-    timer_interval_us_ = 1000000; // 1Hz
+    // nothing to see here
 }
 
 InplaceInputMenu::~InplaceInputMenu()
@@ -144,19 +145,27 @@ bool InplaceInputMenu::is_valid(int key)
 bool InplaceInputMenu::process_timer(bool controller_is_connected, int& return_code,
     absolute_time_t& next_timer)
 {
-    if(controller_is_connected) {
-        blink_on_ = !blink_on_;
-        if(value_.size() < max_value_size_) {
-            curpos(r_+1, c_+1+value_.size());
-            if(do_highlight_) {
-                save_cursor();
-                highlight();
-            }
-            putchar_raw(blink_on_ ? ' ' : '_');
-            if(do_highlight_) {
-                restore_cursor();
+    blink_count_ += 1;
+    if(blink_count_ >= blink_interval_) {
+        blink_count_ = 0;
+        if(controller_is_connected) {
+            blink_on_ = !blink_on_;
+            if(value_.size() < max_value_size_) {
+                curpos(r_+1, c_+1+value_.size());
+                if(do_highlight_) {
+                    save_cursor();
+                    highlight();
+                }
+                putchar_raw(blink_on_ ? ' ' : '_');
+                if(do_highlight_) {
+                    restore_cursor();
+                }
             }
         }
+    }
+    if(base_menu_) {
+        controller_is_connected &= base_menu_->process_timer(
+            controller_is_connected, return_code, next_timer);
     }
     return controller_is_connected;
 }
@@ -243,8 +252,8 @@ InputMenu::InputMenu(unsigned max_value_size, ValidInput valid_input,
     iim_(*this, max_value_size, valid_input, false, nullptr),
     base_menu_(base_menu), prompt_(prompt)
 {
-    cls_on_redraw_ = false;
     timer_interval_us_ = iim_.timer_interval_us();
+    cls_on_redraw_ = false;
 }
 
 InputMenu::InputMenu(unsigned max_value_size, const std::string title,
