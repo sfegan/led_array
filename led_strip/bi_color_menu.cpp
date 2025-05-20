@@ -1,3 +1,5 @@
+#include <sstream>
+#include <iomanip>
 #include <algorithm>
 #include <cmath>
 
@@ -204,8 +206,13 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
 
     case 'D':
         for(int iled=0; iled<pio_.non(); iled++) {
-            std::string s = std::to_string(iled) + ": " + std::to_string(color_code(iled));
-            puts(s.c_str());
+            uint32_t cc  = color_code(iled);
+            std::ostringstream ss;
+            ss << std::setw(3) << iled << ": " 
+               << std::setw(3) << ((cc>>16)&0xff) << " "
+               << std::setw(3) << ((cc>>24)&0xff) << " "
+               << std::setw(3) << ((cc>>8)&0xff);
+            puts(ss.str().c_str());
         }
         break;
 
