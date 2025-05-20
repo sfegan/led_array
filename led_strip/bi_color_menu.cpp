@@ -30,7 +30,8 @@ uint32_t BiColorMenu::color_code(int iled)
     float fperiod = float(period_);
     float xx = 100.0f / (fperiod * (50 - hold_));
     float fled = float(iled);
-    float x = std::min(fled * xx, 1.0f - (fled - 0.5f*fperiod) * xx);
+    float fbalance = float(balance_)*0.01f;
+    float x = std::min(fled * xx, 1.0f - (fled - fbalance*fperiod) * xx);
     x = std::max(x, 0.0f);
     x = std::min(x, 1.0f);
     float r = float(c0_.r())*x + float(c1_.r())*(1-x);
@@ -66,8 +67,9 @@ std::vector<SimpleItemValueMenu::MenuItem> BiColorMenu::make_menu_items()
 
     RGBHSVMenuItems::make_menu_items(menu_items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
 
-    menu_items.at(MIP_PERIOD)      = {"-/p/+   : Set transition period in LEDs", 5, "20"};
-    menu_items.at(MIP_HOLD)        = {"[/m/]   : Set maibtain percentage", 3, "0"};
+    menu_items.at(MIP_PERIOD)      = {"-/p/+   : Decrease/Set/Increase transition period in LEDs", 5, "20"};
+    menu_items.at(MIP_HOLD)        = {"[/m/]   : Decrease/Set/Increase maintain percentage", 3, "0"};
+    menu_items.at(MIP_BALANCE)     = {"</v/>   : Decrease/Set/Increase balance", 3, "50"};
 
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
@@ -90,6 +92,12 @@ void BiColorMenu::set_hold_value(bool draw)
 {
     menu_items_[MIP_HOLD].value = std::to_string(hold_);
     if(draw)draw_item_value(MIP_HOLD);
+}
+
+void BiColorMenu::set_balance_value(bool draw)
+{
+    menu_items_[MIP_BALANCE].value = std::to_string(balance_);
+    if(draw)draw_item_value(MIP_BALANCE);
 }
 
 bool BiColorMenu::event_loop_starting(int& return_code)
@@ -167,6 +175,26 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
             send_color_string();
         }
         set_hold_value();
+        break;
+
+    case '>':
+        if(increase_value_in_range(balance_, 100, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_balance_value();
+            send_color_string();
+        }
+        break;
+    case '<':
+        if(decrease_value_in_range(balance_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_balance_value();
+            send_color_string();
+        }
+        break; 
+    case 'v':
+    case 'V':
+        if(InplaceInputMenu::input_value_in_range(balance_, 0, 100, this, MIP_BALANCE, 3)) {
+            send_color_string();
+        }
+        set_balance_value();
         break;
 
     case 'q':

@@ -28,6 +28,7 @@ private:
         MIP_V,
         MIP_PERIOD,
         MIP_HOLD,
+        MIP_BALANCE,
         MIP_EXIT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
     };
@@ -37,6 +38,7 @@ private:
     void set_cset_value(bool draw = true);
     void set_period_value(bool draw = true);
     void set_hold_value(bool draw = true);
+    void set_balance_value(bool draw = true);
     
     uint32_t color_code(int iled);
     void send_color_string();
@@ -48,4 +50,5 @@ private:
     int cset_ = 0;
     int period_ = 20;
     int hold_ = 0;
+    int balance_ = 50;
 };
