@@ -22,7 +22,7 @@ BiColorMenu::BiColorMenu(SerialPIO& pio):
     c0_(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V),
     c1_(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V)
 {
-    timer_interval_us_ = 1000000; // 1Hz
+    timer_interval_us_ = 50000; // 20Hz
     c0_.redraw(false);
 }
 
@@ -153,9 +153,10 @@ std::vector<SimpleItemValueMenu::MenuItem> BiColorMenu::make_menu_items()
 
     RGBHSVMenuItems::make_menu_items(menu_items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
 
-    menu_items.at(MIP_PERIOD)      = {"-/p/+   : Decrease/Set/Increase transition period in LEDs", 5, "20"};
-    menu_items.at(MIP_HOLD)        = {"[/m/]   : Decrease/Set/Increase maintain length (0..127)", 3, "0"};
-    menu_items.at(MIP_BALANCE)     = {"</w/>   : Decrease/Set/Increase balance (-128..128)", 4, "0"};
+    menu_items.at(MIP_PERIOD)      = {"-/p/+      : Decrease/Set/Increase transition period in LEDs", 5, "20"};
+    menu_items.at(MIP_HOLD)        = {"[/m/]      : Decrease/Set/Increase maintain length (0..127)", 3, "0"};
+    menu_items.at(MIP_BALANCE)     = {"</w/>      : Decrease/Set/Increase balance (-128..128)", 4, "0"};
+    menu_items.at(MIP_SPEED)       = {"Left/Right : Decrease/Increase speed", 5, "0"};
 
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
@@ -184,6 +185,12 @@ void BiColorMenu::set_balance_value(bool draw)
 {
     menu_items_[MIP_BALANCE].value = std::to_string(balance_);
     if(draw)draw_item_value(MIP_BALANCE);
+}
+
+void BiColorMenu::set_speed_value(bool draw)
+{
+    menu_items_[MIP_SPEED].value = std::to_string(speed_);
+    if(draw)draw_item_value(MIP_SPEED);
 }
 
 bool BiColorMenu::event_loop_starting(int& return_code)
@@ -287,6 +294,19 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         set_balance_value();
         break;
 
+    case KEY_RIGHT:
+        if(increase_value_in_range(speed_, 256, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_speed_value();
+            send_color_string();
+        }
+        break;
+    case KEY_LEFT:
+        if(decrease_value_in_range(speed_, -256, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_speed_value();
+            send_color_string();
+        }
+        break;
+
     case 'q':
     case 'Q':
         return_code = 0;
@@ -316,6 +336,18 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
 bool BiColorMenu::process_timer(bool controller_is_connected, int& return_code, 
     absolute_time_t& next_timer)
 {
-    set_heartbeat(!heartbeat_);
+    heartbeat_timer_count_ += 1;
+    if(heartbeat_timer_count_ == 20) {
+        if(controller_is_connected) {
+            set_heartbeat(!heartbeat_);
+        }
+        heartbeat_timer_count_ = 0;
+    }
+
+    if(speed_ != 0) {
+        phase_ = (phase_ + speed_) % 65536;
+        send_color_string();
+    }
+
     return true;
 }

@@ -29,6 +29,7 @@ private:
         MIP_PERIOD,
         MIP_HOLD,
         MIP_BALANCE,
+        MIP_SPEED,
         MIP_EXIT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
     };
@@ -39,6 +40,7 @@ private:
     void set_period_value(bool draw = true);
     void set_hold_value(bool draw = true);
     void set_balance_value(bool draw = true);
+    void set_speed_value(bool draw = true);
     
     uint32_t color_code(int iled);
     void send_color_string();
@@ -51,8 +53,10 @@ private:
     int period_ = 20;
     int hold_ = 0;
     int balance_ = 0;
+    int speed_ = 0;
     int phase_ = 0;
 
+    int heartbeat_timer_count_ = 0;
     std::vector<uint32_t> color_codes_;
     std::vector<uint32_t> flash_value_;
 };
