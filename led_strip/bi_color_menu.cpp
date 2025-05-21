@@ -26,7 +26,7 @@ BiColorMenu::BiColorMenu(SerialPIO& pio):
     c0_.redraw(false);
 }
 
-uint32_t BiColorMenu::color_code(int iled)
+uint32_t BiColorMenu::color_code(int i_led)
 {
     // period_ = total number of LEDs in the cycle
     // hold_ = percent (0-127) of period_ to hold at each color
@@ -50,12 +50,12 @@ uint32_t BiColorMenu::color_code(int iled)
     if (trans_len < 0) trans_len = 0;
 
     // Compute offset for balance
-    int dhold_len = (hold_len * balance_frac) >> FRAC_BITS;
+    int delta_hold_len = (hold_len * balance_frac) >> FRAC_BITS;
 
     // Apply phase (phase_ is 0..65535, maps to 0..p in fixed point)
     // Use 16.16 fixed point for sub-LED precision
     uint32_t p_fixed = (uint32_t)p << FRAC_BITS;
-    uint32_t led_pos_fixed = ((uint32_t)iled << FRAC_BITS);
+    uint32_t led_pos_fixed = ((uint32_t)i_led << FRAC_BITS);
 
     // phase_ is 0..65535, so multiply by p and shift down to 16.16
     uint32_t phase_offset_fixed = ((uint64_t)phase_ * p_fixed) >> 16;
@@ -63,11 +63,11 @@ uint32_t BiColorMenu::color_code(int iled)
     // Calculate the four region boundaries in 16.16 fixed point
     uint32_t up_start_fixed = (phase_offset_fixed + p_fixed) % p_fixed;
     uint32_t up_end_fixed = (up_start_fixed + ((uint32_t)trans_len << FRAC_BITS)) % p_fixed;
-    uint32_t c1_hold_end_fixed = (up_end_fixed + ((uint32_t)(hold_len + dhold_len) << FRAC_BITS) + p_fixed) % p_fixed;
+    uint32_t c1_hold_end_fixed = (up_end_fixed + ((uint32_t)(hold_len + delta_hold_len) << FRAC_BITS) + p_fixed) % p_fixed;
     uint32_t down_end_fixed = (c1_hold_end_fixed + ((uint32_t)trans_len << FRAC_BITS)) % p_fixed;
-    // uint32_t c0_hold_end_fixed = (down_end_fixed + ((uint32_t)(hold_len - dhold_len) << FRAC_BITS) + p_fixed) % p_fixed;
+    // uint32_t c0_hold_end_fixed = (down_end_fixed + ((uint32_t)(hold_len - delta_hold_len) << FRAC_BITS) + p_fixed) % p_fixed;
 
-    // Map iled into the period, in 16.16 fixed point
+    // Map i_led into the period, in 16.16 fixed point
     uint32_t idx_fixed = led_pos_fixed % p_fixed;
 
     int r, g, b;
@@ -75,7 +75,7 @@ uint32_t BiColorMenu::color_code(int iled)
     if (trans_len == 0) {
         // Degenerate case: square wave, just alternate between c0 and c1
         uint32_t c1_start_fixed = (phase_offset_fixed + p_fixed) % p_fixed;
-        uint32_t c1_end_fixed = (c1_start_fixed + ((uint32_t)(hold_len + dhold_len) << FRAC_BITS) + p_fixed) % p_fixed;
+        uint32_t c1_end_fixed = (c1_start_fixed + ((uint32_t)(hold_len + delta_hold_len) << FRAC_BITS) + p_fixed) % p_fixed;
         bool in_c1;
         if (hold_len == 0) {
             in_c1 = false;
@@ -97,7 +97,9 @@ uint32_t BiColorMenu::color_code(int iled)
                (up_start_fixed > up_end_fixed && (idx_fixed >= up_start_fixed || idx_fixed < up_end_fixed))) {
         // c0 -> c1 (blend)
         uint32_t rel_fixed = (idx_fixed + p_fixed - up_start_fixed) % p_fixed;
-        uint32_t t_fixed = (rel_fixed * FRAC_ONE) / ((uint32_t)trans_len << FRAC_BITS);
+        // Use fractional LED precision for ramp
+        uint32_t ramp_len_fixed = ((uint32_t)trans_len << FRAC_BITS);
+        uint32_t t_fixed = (rel_fixed * FRAC_ONE + (ramp_len_fixed/2)) / ramp_len_fixed;
         if (t_fixed > FRAC_ONE) t_fixed = FRAC_ONE;
         r = (c0_.r() * (FRAC_ONE - t_fixed) + c1_.r() * t_fixed) >> FRAC_BITS;
         g = (c0_.g() * (FRAC_ONE - t_fixed) + c1_.g() * t_fixed) >> FRAC_BITS;
@@ -112,8 +114,10 @@ uint32_t BiColorMenu::color_code(int iled)
                (c1_hold_end_fixed > down_end_fixed && (idx_fixed >= c1_hold_end_fixed || idx_fixed < down_end_fixed))) {
         // c1 -> c0 (blend)
         uint32_t rel_fixed = (idx_fixed + p_fixed - c1_hold_end_fixed) % p_fixed;
-        uint32_t t_fixed = FRAC_ONE - (rel_fixed * FRAC_ONE) / ((uint32_t)trans_len << FRAC_BITS);
-        if (t_fixed > FRAC_ONE) t_fixed = 0;
+        uint32_t ramp_len_fixed = ((uint32_t)trans_len << FRAC_BITS);
+        uint32_t t_fixed = (rel_fixed * FRAC_ONE + (ramp_len_fixed/2)) / ramp_len_fixed;
+        if (t_fixed > FRAC_ONE) t_fixed = FRAC_ONE;
+        t_fixed = FRAC_ONE - t_fixed;
         r = (c0_.r() * (FRAC_ONE - t_fixed) + c1_.r() * t_fixed) >> FRAC_BITS;
         g = (c0_.g() * (FRAC_ONE - t_fixed) + c1_.g() * t_fixed) >> FRAC_BITS;
         b = (c0_.b() * (FRAC_ONE - t_fixed) + c1_.b() * t_fixed) >> FRAC_BITS;
@@ -124,7 +128,7 @@ uint32_t BiColorMenu::color_code(int iled)
         b = c0_.b();
     }
 
-    return rgb_to_grbz(r, g, b);
+    return rgb_to_grb(r, g, b);
 }
 
 void BiColorMenu::send_color_string()
