@@ -26,21 +26,98 @@ BiColorMenu::BiColorMenu(SerialPIO& pio):
     c0_.redraw(false);
 }
 
-uint32_t BiColorMenu::color_code(int iled) 
+uint32_t BiColorMenu::color_code(int iled)
 {
-    iled %= period_;
-    float fperiod = float(period_);
-    float xx = 100.0f / (fperiod * (50 - hold_));
-    float fled = float(iled);
-    float fbalance = float(balance_)*0.01f;
-    float x = std::min(fled * xx, 1.0f - (fled - fbalance*fperiod) * xx);
-    x = std::max(x, 0.0f);
-    x = std::min(x, 1.0f);
-    float r = float(c0_.r())*x + float(c1_.r())*(1-x);
-    float g = float(c0_.g())*x + float(c1_.g())*(1-x);
-    float b = float(c0_.b())*x + float(c1_.b())*(1-x);
-    uint32_t color_code = rgb_to_grbz(r, g, b);
-    return color_code;
+    // period_ = total number of LEDs in the cycle
+    // hold_ = percent (0-127) of period_ to hold at each color
+    // balance_ = percent (0-255) of period_ to shift the center point
+    // phase_ = phase offset (0 to 65535)
+
+    int p = period_;
+    if (p <= 0) p = 1; // avoid division by zero
+
+    // All calculations in integer math, using 0..65535 for fractions
+    const int FRAC_BITS = 16;
+    const int FRAC_ONE = 1 << FRAC_BITS;
+
+    // Convert hold_ and balance_ to 0..65535
+    int hold_frac = hold_ << (FRAC_BITS - 8);
+    int balance_frac = balance_ << (FRAC_BITS - 8);
+
+    // Calculate region lengths
+    int hold_len = (p * hold_frac + (FRAC_ONE/2)) >> FRAC_BITS;
+    int trans_len = (p - 2 * hold_len) / 2;
+    if (trans_len < 0) trans_len = 0;
+
+    // Compute offset for balance
+    int offset = ((p - 2 * hold_len - 2 * trans_len) * balance_frac + (FRAC_ONE/2)) >> FRAC_BITS;
+
+    // Apply phase (phase_ is 0..65535, maps to 0..p-1)
+    int phase_offset = (phase_ * p) >> 16;
+
+    // Calculate the four region boundaries
+    int up_start = (offset + phase_offset + p) % p;
+    int up_end = (up_start + trans_len) % p;
+    int c1_hold_end = (up_end + hold_len) % p;
+    int down_end = (c1_hold_end + trans_len) % p;
+    int c0_hold_end = (down_end + hold_len) % p;
+
+    // Map iled into the period
+    int idx = iled % p;
+
+    int r, g, b;
+
+    if (trans_len == 0) {
+        // Degenerate case: square wave, just alternate between c0 and c1
+        int c1_start = (offset + phase_offset + p) % p;
+        int c1_end = (c1_start + hold_len) % p;
+        bool in_c1;
+        if (hold_len == 0) {
+            in_c1 = false;
+        } else if (c1_start < c1_end) {
+            in_c1 = (idx >= c1_start && idx < c1_end);
+        } else {
+            in_c1 = (idx >= c1_start || idx < c1_end);
+        }
+        if (in_c1) {
+            r = c1_.r();
+            g = c1_.g();
+            b = c1_.b();
+        } else {
+            r = c0_.r();
+            g = c0_.g();
+            b = c0_.b();
+        }
+    } else if ((up_start <= up_end && idx >= up_start && idx < up_end) ||
+               (up_start > up_end && (idx >= up_start || idx < up_end))) {
+        // c0 -> c1 (blend)
+        int rel = (idx - up_start + p) % p;
+        int t_fixed = (rel * FRAC_ONE) / trans_len;
+        r = (c0_.r() * (FRAC_ONE - t_fixed) + c1_.r() * t_fixed) >> FRAC_BITS;
+        g = (c0_.g() * (FRAC_ONE - t_fixed) + c1_.g() * t_fixed) >> FRAC_BITS;
+        b = (c0_.b() * (FRAC_ONE - t_fixed) + c1_.b() * t_fixed) >> FRAC_BITS;
+    } else if ((up_end <= c1_hold_end && idx >= up_end && idx < c1_hold_end) ||
+               (up_end > c1_hold_end && (idx >= up_end || idx < c1_hold_end))) {
+        // hold at c1 (saturation)
+        r = c1_.r();
+        g = c1_.g();
+        b = c1_.b();
+    } else if ((c1_hold_end <= down_end && idx >= c1_hold_end && idx < down_end) ||
+               (c1_hold_end > down_end && (idx >= c1_hold_end || idx < down_end))) {
+        // c1 -> c0 (blend)
+        int rel = (idx - c1_hold_end + p) % p;
+        int t_fixed = FRAC_ONE - (rel * FRAC_ONE) / trans_len;
+        r = (c0_.r() * (FRAC_ONE - t_fixed) + c1_.r() * t_fixed) >> FRAC_BITS;
+        g = (c0_.g() * (FRAC_ONE - t_fixed) + c1_.g() * t_fixed) >> FRAC_BITS;
+        b = (c0_.b() * (FRAC_ONE - t_fixed) + c1_.b() * t_fixed) >> FRAC_BITS;
+    } else {
+        // hold at c0 (saturation)
+        r = c0_.r();
+        g = c0_.g();
+        b = c0_.b();
+    }
+
+    return rgb_to_grbz(r, g, b);
 }
 
 void BiColorMenu::send_color_string()
@@ -160,7 +237,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         break;
 
     case ']':
-        if(increase_value_in_range(hold_, 49, (key_count >= 15 ? 5 : 1), key_count==1)) {
+        if(increase_value_in_range(hold_, 127, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_hold_value();
             send_color_string();
         }
@@ -173,14 +250,14 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         break; 
     case 'm':
     case 'M':
-        if(InplaceInputMenu::input_value_in_range(hold_, 0, 49, this, MIP_HOLD, 3)) {
+        if(InplaceInputMenu::input_value_in_range(hold_, 0, 127, this, MIP_HOLD, 3)) {
             send_color_string();
         }
         set_hold_value();
         break;
 
     case '>':
-        if(increase_value_in_range(balance_, 100, (key_count >= 15 ? 5 : 1), key_count==1)) {
+        if(increase_value_in_range(balance_, 255, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_balance_value();
             send_color_string();
         }
@@ -193,7 +270,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         break; 
     case 'v':
     case 'V':
-        if(InplaceInputMenu::input_value_in_range(balance_, 0, 100, this, MIP_BALANCE, 3)) {
+        if(InplaceInputMenu::input_value_in_range(balance_, 0, 255, this, MIP_BALANCE, 3)) {
             send_color_string();
         }
         set_balance_value();

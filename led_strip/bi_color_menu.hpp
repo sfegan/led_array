@@ -51,4 +51,5 @@ private:
     int period_ = 20;
     int hold_ = 0;
     int balance_ = 50;
+    int phase_ = 0;
 };
