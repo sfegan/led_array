@@ -24,7 +24,7 @@ BiColorMenu::BiColorMenu(SerialPIO& pio):
     c0_.redraw(false);
 }
 
-uint32_t BiColorMenu::color_code(int iled)
+uint32_t BiColorMenu::color_code(int iled, bool debug)
 {
     // period_ = total number of LEDs in the cycle
     // hold_ = percent (0-127) of period_ to hold at each color
@@ -117,6 +117,9 @@ uint32_t BiColorMenu::color_code(int iled)
         g = c0_.g();
         b = c0_.b();
     }
+
+    printf("%3d: %3d %3d %3d %d %d %d\n", iled, r, g, b, 
+        idx, up_start, up_end);
 
     return rgb_to_grbz(r, g, b);
 }
@@ -322,9 +325,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
 
     case 'D':
         for(int iled=0; iled<pio_.non(); iled++) {
-            uint32_t cc  = color_code(iled);
-            printf("%3d: %3d %3d %3d\n", iled, 
-                (cc>>16)&0xff, (cc>>8)&0xff, cc&0xff);
+            uint32_t cc  = color_code(iled, true);
         }
         break;
 

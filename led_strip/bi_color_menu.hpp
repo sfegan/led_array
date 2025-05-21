@@ -42,7 +42,7 @@ private:
     void set_balance_value(bool draw = true);
     void set_speed_value(bool draw = true);
     
-    uint32_t color_code(int iled);
+    uint32_t color_code(int iled, bool debug = false);
     void send_color_string();
 
     SerialPIO& pio_;
