@@ -54,12 +54,12 @@ void BiColorMenu::update_calculations()
     c1_hold_end_ = (up_end_ + hold_len + dhold_len + p_len_) % p_len_;
     down_end_    = (c1_hold_end_ + trans_len_) % p_len_;
 
-    uint64_t fp1 = (1<<31) - flash_prob_;
+    uint64_t fp1 = (1<<31) - (flash_prob_<<20);
     uint64_t fpn = (1<<31);
     for(int i=0; i<pio_.non(); i++) {
         fpn = (fpn * fp1)>>31;
     }
-    non_flash_prob_ = fpn;
+    non_flash_prob_ = (1<<31) - fpn;
 }
 
 void BiColorMenu::generate_random_flashes()
