@@ -41,58 +41,61 @@ uint32_t BiColorMenu::color_code(int iled)
     const int FRAC_ONE = 1 << FRAC_BITS;
 
     // Convert hold_ and balance_ to 0..65535
+    int phase_frac = phase_ << (FRAC_BITS - 16);
     int hold_frac = hold_ << (FRAC_BITS - 8);
     int balance_frac = balance_ << (FRAC_BITS - 8);
 
-    // Calculate region lengths
-    int hold_len = (p * hold_frac + (FRAC_ONE/2)) >> FRAC_BITS;
-    int trans_len = (p - 2 * hold_len) / 2;
+    // Calculate region lengths (scaled by 65536)
+    int p_len = p << FRAC_BITS;
+    int hold_len = p * hold_frac;
+    int trans_len = (p_len - 2 * hold_len) / 2;
     if (trans_len < 0) trans_len = 0;
 
     // Compute offset for balance
-    int dhold_len = (hold_len * balance_frac) >> FRAC_BITS;
+    int dhold_len = hold_len * balance_frac;
 
-    // Apply phase (phase_ is 0..65535, maps to 0..p-1)
-    int phase_offset = (phase_ * p) >> 16;
+    // Apply phase
+    int phase_offset = phase_frac * p;
 
     // Calculate the four region boundaries
-    int up_start = (phase_offset + p) % p;
-    int up_end = (up_start + trans_len) % p;
-    int c1_hold_end = (up_end + hold_len + dhold_len + p) % p;
-    int down_end = (c1_hold_end + trans_len) % p;
+    int up_start = (phase_offset + p_len) % p_len;
+    int up_end = (up_start + trans_len) % p_len;
+    int c1_hold_end = (up_end + hold_len + dhold_len + p_len) % p_len;
+    int down_end = (c1_hold_end + trans_len) % p_len;
     // int c0_hold_end = (down_end + hold_len - dhold_len + p) % p;
 
     // Map iled into the period
-    int idx = iled % p;
+    int idx = (iled % p)<<FRAC_BITS;
 
     int r, g, b;
 
-    if (trans_len == 0) {
-        // Degenerate case: square wave, just alternate between c0 and c1
-        int c1_start = (phase_offset + p) % p;
-        int c1_end = (c1_start + hold_len + dhold_len + p) % p;
-        bool in_c1;
-        if (hold_len == 0) {
-            in_c1 = false;
-        } else if (c1_start < c1_end) {
-            in_c1 = (idx >= c1_start && idx < c1_end);
-        } else {
-            in_c1 = (idx >= c1_start || idx < c1_end);
-        }
-        if (in_c1) {
-            r = c1_.r();
-            g = c1_.g();
-            b = c1_.b();
-        } else {
-            r = c0_.r();
-            g = c0_.g();
-            b = c0_.b();
-        }
-    } else if ((up_start <= up_end && idx >= up_start && idx < up_end) ||
+    // if (trans_len == 0) {
+    //     // Degenerate case: square wave, just alternate between c0 and c1
+    //     int c1_start = (phase_offset + p) % p;
+    //     int c1_end = (c1_start + hold_len + dhold_len + p) % p;
+    //     bool in_c1;
+    //     if (hold_len == 0) {
+    //         in_c1 = false;
+    //     } else if (c1_start < c1_end) {
+    //         in_c1 = (idx >= c1_start && idx < c1_end);
+    //     } else {
+    //         in_c1 = (idx >= c1_start || idx < c1_end);
+    //     }
+    //     if (in_c1) {
+    //         r = c1_.r();
+    //         g = c1_.g();
+    //         b = c1_.b();
+    //     } else {
+    //         r = c0_.r();
+    //         g = c0_.g();
+    //         b = c0_.b();
+    //     }
+    // } else 
+    if ((up_start <= up_end && idx >= up_start && idx < up_end) ||
                (up_start > up_end && (idx >= up_start || idx < up_end))) {
         // c0 -> c1 (blend)
-        int rel = (idx - up_start + p) % p;
-        int t_fixed = (rel * FRAC_ONE) / trans_len;
+        int rel = (idx - up_start + p_len) % p_len;
+        int t_fixed = rel / trans_len;
         r = (c0_.r() * (FRAC_ONE - t_fixed) + c1_.r() * t_fixed) >> FRAC_BITS;
         g = (c0_.g() * (FRAC_ONE - t_fixed) + c1_.g() * t_fixed) >> FRAC_BITS;
         b = (c0_.b() * (FRAC_ONE - t_fixed) + c1_.b() * t_fixed) >> FRAC_BITS;
@@ -105,8 +108,8 @@ uint32_t BiColorMenu::color_code(int iled)
     } else if ((c1_hold_end <= down_end && idx >= c1_hold_end && idx < down_end) ||
                (c1_hold_end > down_end && (idx >= c1_hold_end || idx < down_end))) {
         // c1 -> c0 (blend)
-        int rel = (idx - c1_hold_end + p) % p;
-        int t_fixed = FRAC_ONE - (rel * FRAC_ONE) / trans_len;
+        int rel = (idx - c1_hold_end + p_len) % p_len;
+        int t_fixed = FRAC_ONE - rel / trans_len;
         r = (c0_.r() * (FRAC_ONE - t_fixed) + c1_.r() * t_fixed) >> FRAC_BITS;
         g = (c0_.g() * (FRAC_ONE - t_fixed) + c1_.g() * t_fixed) >> FRAC_BITS;
         b = (c0_.b() * (FRAC_ONE - t_fixed) + c1_.b() * t_fixed) >> FRAC_BITS;
