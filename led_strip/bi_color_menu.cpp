@@ -50,7 +50,7 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
     if (trans_len < 0) trans_len = 0;
 
     // Compute offset for balance
-    int dhold_len = hold_len * balance_frac;
+    int dhold_len = int64_t(hold_len) * int64_t(balance_frac) >> FRAC_BITS;
 
     // Apply phase
     int phase_offset = phase_frac * p;
@@ -353,7 +353,7 @@ bool BiColorMenu::process_timer(bool controller_is_connected, int& return_code,
     }
 
     if(speed_ != 0) {
-        phase_ = (phase_ + (speed_<<4)) % 65536;
+        phase_ = (phase_ + (speed_<<7)) % 65536;
         send_color_string();
     }
 
