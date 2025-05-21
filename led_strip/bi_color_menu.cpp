@@ -18,25 +18,18 @@ BiColorMenu::BiColorMenu(SerialPIO& pio):
     SimpleItemValueMenu(make_menu_items(), "Bi color menu"),
     pio_(pio), 
     c0_(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V),
-    c1_(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V)
+    c1_(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V),
+    rng_(123)
 {
     timer_interval_us_ = 50000; // 20Hz
     c0_.redraw(false);
+    update_calculations();
 }
 
-uint32_t BiColorMenu::color_code(int iled, bool debug)
+void BiColorMenu::update_calculations()
 {
-    // period_ = total number of LEDs in the cycle
-    // hold_ = percent (0-127) of period_ to hold at each color
-    // balance_ = percent (0-255) of period_ to shift the center point
-    // phase_ = phase offset (0 to 65535)
-
     int p = period_;
     if (p <= 0) p = 1; // avoid division by zero
-
-    // All calculations in integer math, using 0..65535 for fractions
-    const int FRAC_BITS = 16;
-    const int FRAC_ONE = 1 << FRAC_BITS;
 
     // Convert hold_ and balance_ to 0..65535
     int phase_frac = phase_ << (FRAC_BITS - 16);
@@ -44,10 +37,10 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
     int balance_frac = balance_ << (FRAC_BITS - 7);
 
     // Calculate region lengths (scaled by 65536)
-    int p_len = p << FRAC_BITS;
+    p_len_ = p << FRAC_BITS;
     int hold_len = p * hold_frac;
-    int trans_len = (p_len - 2 * hold_len) / 2;
-    if (trans_len < 0) trans_len = 0;
+    trans_len_ = (p_len_ - 2 * hold_len) / 2;
+    if (trans_len_ < 0) trans_len_ = 0;
 
     // Compute offset for balance
     int dhold_len = int64_t(hold_len) * int64_t(balance_frac) >> FRAC_BITS;
@@ -56,60 +49,60 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
     int phase_offset = phase_frac * p;
 
     // Calculate the four region boundaries
-    int up_start = (phase_offset + p_len) % p_len;
-    int up_end = (up_start + trans_len) % p_len;
-    int c1_hold_end = (up_end + hold_len + dhold_len + p_len) % p_len;
-    int down_end = (c1_hold_end + trans_len) % p_len;
-    // int c0_hold_end = (down_end + hold_len - dhold_len + p) % p;
+    up_start_    = (phase_offset + p_len_) % p_len_;
+    up_end_      = (up_start_ + trans_len_) % p_len_;
+    c1_hold_end_ = (up_end_ + hold_len + dhold_len + p_len_) % p_len_;
+    down_end_    = (c1_hold_end_ + trans_len_) % p_len_;
 
+    uint64_t fp1 = (1<<31) - flash_prob_;
+    uint64_t fpn = (1<<31);
+    for(int i=0; i<pio_.non(); i++) {
+        fpn = (fpn * fp1)>>31;
+    }
+    non_flash_prob_ = fpn;
+}
+
+void BiColorMenu::generate_random_flashes()
+{
+    for(int i=0; i<pio_.non(); i++) {
+        flash_value_[i] >>= 1;
+    }
+    uint32_t x = rng_();
+    while(x < non_flash_prob_) {
+        int iled = rng_() % pio_.non();
+        flash_value_[iled] = 255;
+        x = rng_();
+    }
+}
+
+uint32_t BiColorMenu::color_code(int iled, bool debug)
+{
     // Map iled into the period
-    int idx = (iled % p)<<FRAC_BITS;
+    int idx = (iled<<FRAC_BITS) % p_len_;
 
     int r, g, b;
 
-    // if (trans_len == 0) {
-    //     // Degenerate case: square wave, just alternate between c0 and c1
-    //     int c1_start = (phase_offset + p) % p;
-    //     int c1_end = (c1_start + hold_len + dhold_len + p) % p;
-    //     bool in_c1;
-    //     if (hold_len == 0) {
-    //         in_c1 = false;
-    //     } else if (c1_start < c1_end) {
-    //         in_c1 = (idx >= c1_start && idx < c1_end);
-    //     } else {
-    //         in_c1 = (idx >= c1_start || idx < c1_end);
-    //     }
-    //     if (in_c1) {
-    //         r = c1_.r();
-    //         g = c1_.g();
-    //         b = c1_.b();
-    //     } else {
-    //         r = c0_.r();
-    //         g = c0_.g();
-    //         b = c0_.b();
-    //     }
-    // } else 
-    if ((up_start <= up_end && idx >= up_start && idx < up_end) ||
-               (up_start > up_end && (idx >= up_start || idx < up_end))) {
+    if ((up_start_ <= up_end_ && idx >= up_start_ && idx < up_end_) ||
+               (up_start_ > up_end_ && (idx >= up_start_ || idx < up_end_))) {
         // c0 -> c1 (blend)
-        int rel = (idx - up_start + p_len) % p_len;
-        int t_fixed = (int64_t(rel)<<FRAC_BITS) / int64_t(trans_len);
+        int rel = (idx - up_start_ + p_len_) % p_len_;
+        int t_fixed = (int64_t(rel)<<FRAC_BITS) / int64_t(trans_len_);
         // printf("%3d: %d %d %d\n", iled, idx, rel, t_fixed);
 
         r = (c0_.r() * (FRAC_ONE - t_fixed) + c1_.r() * t_fixed) >> FRAC_BITS;
         g = (c0_.g() * (FRAC_ONE - t_fixed) + c1_.g() * t_fixed) >> FRAC_BITS;
         b = (c0_.b() * (FRAC_ONE - t_fixed) + c1_.b() * t_fixed) >> FRAC_BITS;
-    } else if ((up_end <= c1_hold_end && idx >= up_end && idx < c1_hold_end) ||
-               (up_end > c1_hold_end && (idx >= up_end || idx < c1_hold_end))) {
+    } else if ((up_end_ <= c1_hold_end_ && idx >= up_end_ && idx < c1_hold_end_) ||
+               (up_end_ > c1_hold_end_ && (idx >= up_end_ || idx < c1_hold_end_))) {
         // hold at c1 (saturation)
         r = c1_.r();
         g = c1_.g();
         b = c1_.b();
-    } else if ((c1_hold_end <= down_end && idx >= c1_hold_end && idx < down_end) ||
-               (c1_hold_end > down_end && (idx >= c1_hold_end || idx < down_end))) {
+    } else if ((c1_hold_end_ <= down_end_ && idx >= c1_hold_end_ && idx < down_end_) ||
+               (c1_hold_end_ > down_end_ && (idx >= c1_hold_end_ || idx < down_end_))) {
         // c1 -> c0 (blend)
-        int rel = (idx - c1_hold_end + p_len) % p_len;
-        int t_fixed = FRAC_ONE - (int64_t(rel)<<FRAC_BITS) / int64_t(trans_len);
+        int rel = (idx - c1_hold_end_ + p_len_) % p_len_;
+        int t_fixed = FRAC_ONE - (int64_t(rel)<<FRAC_BITS) / int64_t(trans_len_);
         r = (c0_.r() * (FRAC_ONE - t_fixed) + c1_.r() * t_fixed) >> FRAC_BITS;
         g = (c0_.g() * (FRAC_ONE - t_fixed) + c1_.g() * t_fixed) >> FRAC_BITS;
         b = (c0_.b() * (FRAC_ONE - t_fixed) + c1_.b() * t_fixed) >> FRAC_BITS;
@@ -120,6 +113,12 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
         b = c0_.b();
     }
 
+    if(flash_value_[iled] > 0) {
+        r = std::max(r, flash_value_[iled]);
+        g = std::max(g, flash_value_[iled]);
+        b = std::max(b, flash_value_[iled]);
+    }
+
     if(debug) {
         printf("%3d: %3d %3d %3d\n", iled, r, g, b);
     }
@@ -127,9 +126,14 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
     return rgb_to_grbz(r, g, b);
 }
 
-void BiColorMenu::send_color_string()
+void BiColorMenu::send_color_string(bool flash)
 {
     // puts("Sending color string .....");
+
+    if(flash) {
+        generate_random_flashes();
+    }
+
     if(pio_.back()) {
         int nperiod = std::min(pio_.non(), period_);
         for(int iled=0, jled=pio_.nled(); iled<nperiod; iled++) {
@@ -147,6 +151,7 @@ void BiColorMenu::send_color_string()
             color_codes_[iled] = color_codes_[jled];
         }
     }
+
     pio_.put_pixel_vector(color_codes_);
     pio_.flush();
     // puts("..... color string sent");
@@ -200,6 +205,12 @@ void BiColorMenu::set_speed_value(bool draw)
     if(draw)draw_item_value(MIP_SPEED);
 }
 
+void BiColorMenu::set_flash_prob_value(bool draw)
+{
+    menu_items_[MIP_FLASH_PROB].value = std::to_string(flash_prob_);
+    if(draw)draw_item_value(MIP_FLASH_PROB);
+}
+
 bool BiColorMenu::event_loop_starting(int& return_code)
 {
     color_codes_.resize(pio_.nled());
@@ -244,18 +255,21 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case '+':
         if(increase_value_in_range(period_, 2*pio_.non(), (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_period_value();
+            update_calculations();
             send_color_string();
         }
         break;
     case '-':
         if(decrease_value_in_range(period_, 2, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_period_value();
+            update_calculations();
             send_color_string();
         }
         break; 
     case 'p':
     case 'P':
         if(InplaceInputMenu::input_value_in_range(period_, 2, 2*pio_.non(), this, MIP_PERIOD, 5)) {
+            update_calculations();
             send_color_string();
         }
         set_period_value();
@@ -264,18 +278,21 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case ']':
         if(increase_value_in_range(hold_, 127, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_hold_value();
+            update_calculations();
             send_color_string();
         }
         break;
     case '[':
         if(decrease_value_in_range(hold_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_hold_value();
+            update_calculations();
             send_color_string();
         }
         break; 
     case 'm':
     case 'M':
         if(InplaceInputMenu::input_value_in_range(hold_, 0, 127, this, MIP_HOLD, 3)) {
+            update_calculations();
             send_color_string();
         }
         set_hold_value();
@@ -284,18 +301,21 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case '>':
         if(increase_value_in_range(balance_, 128, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_balance_value();
+            update_calculations();
             send_color_string();
         }
         break;
     case '<':
         if(decrease_value_in_range(balance_, -128, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_balance_value();
+            update_calculations();
             send_color_string();
         }
         break; 
     case 'w':
     case 'W':
         if(InplaceInputMenu::input_value_in_range(balance_, -128, 128, this, MIP_BALANCE, 4)) {
+            update_calculations();
             send_color_string();
         }
         set_balance_value();
@@ -318,6 +338,23 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         if(speed_ != 0) {
             speed_ = 0;
             set_speed_value();
+        }
+        break;
+
+    case KEY_UP:
+        if(increase_value_in_range(flash_prob_, 256, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_flash_prob_value();
+        }
+        break;
+    case KEY_DOWN:
+        if(decrease_value_in_range(flash_prob_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+            set_flash_prob_value();
+        }
+        break;
+    case '0':
+        if(flash_prob_ != 0) {
+            flash_prob_ = 0;
+            set_flash_prob_value();
         }
         break;
 
@@ -352,9 +389,10 @@ bool BiColorMenu::process_timer(bool controller_is_connected, int& return_code,
         heartbeat_timer_count_ = 0;
     }
 
-    if(speed_ != 0) {
+    if(speed_ != 0 and flash_prob_ != 0) {
         phase_ = (phase_ + (speed_<<6)) % 65536;
-        send_color_string();
+        update_calculations();
+        send_color_string(true);
     }
 
     return true;

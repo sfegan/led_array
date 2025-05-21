@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <random>
 
 #include <pico/stdlib.h>
 
@@ -30,6 +31,7 @@ private:
         MIP_HOLD,
         MIP_BALANCE,
         MIP_SPEED,
+        MIP_FLASH_PROB,
         MIP_EXIT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
     };
@@ -41,9 +43,11 @@ private:
     void set_hold_value(bool draw = true);
     void set_balance_value(bool draw = true);
     void set_speed_value(bool draw = true);
+    void set_flash_prob_value(bool draw = true);
     
+    void generate_random_flashes();
     uint32_t color_code(int iled, bool debug = false);
-    void send_color_string();
+    void send_color_string(bool flash = false);
 
     SerialPIO& pio_;
     RGBHSVMenuItems c0_;
@@ -55,8 +59,25 @@ private:
     int balance_ = 0;
     int speed_ = 0;
     int phase_ = 0;
+    int flash_prob_ = 0;
 
     int heartbeat_timer_count_ = 0;
     std::vector<uint32_t> color_codes_;
-    std::vector<uint32_t> flash_value_;
+    std::vector<int> flash_value_;
+
+    // All calculations in integer math, using 0..65535 for fractions
+    static constexpr int FRAC_BITS = 16;
+    static constexpr int FRAC_ONE = 1 << FRAC_BITS;
+
+    void update_calculations();
+
+    int p_len_;
+    int trans_len_;
+    int up_start_;
+    int up_end_;
+    int c1_hold_end_;
+    int down_end_;
+    uint32_t non_flash_prob_ = 0;
+
+    std::minstd_rand rng_;
 };
