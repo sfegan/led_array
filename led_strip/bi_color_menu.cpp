@@ -54,7 +54,7 @@ void BiColorMenu::update_calculations()
     c1_hold_end_ = (up_end_ + hold_len + dhold_len + p_len_) % p_len_;
     down_end_    = (c1_hold_end_ + trans_len_) % p_len_;
 
-    uint64_t fp1 = (1<<31) - (flash_prob_<<20);
+    uint64_t fp1 = (1<<31) - (flash_prob_<<16);
     uint64_t fpn = (1<<31);
     for(int i=0; i<pio_.non(); i++) {
         fpn = (fpn * fp1)>>31;
@@ -68,7 +68,7 @@ void BiColorMenu::generate_random_flashes()
         flash_value_[i] >>= 1;
     }
     uint32_t x = rng_();
-    while(x < non_flash_prob_) {
+    for(int nflash=0; nflash<pio_.non() and x<non_flash_prob_; ++nflash) {
         int iled = rng_() % pio_.non();
         flash_value_[iled] = 255;
         x = rng_();
@@ -397,7 +397,7 @@ bool BiColorMenu::process_timer(bool controller_is_connected, int& return_code,
         heartbeat_timer_count_ = 0;
     }
 
-    if(speed_ != 0 and flash_prob_ != 0) {
+    if(speed_ != 0 or flash_prob_ != 0) {
         phase_ = (phase_ + (speed_<<6)) % 65536;
         update_calculations();
         send_color_string(true);
