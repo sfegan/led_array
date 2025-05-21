@@ -10,6 +10,12 @@ inline uint32_t rgb_to_grbz(uint32_t r, uint32_t g, uint32_t b) {
     return ((r&0xFF) << 16) | ((g&0xFF) << 24) | ((b&0xFF) << 8);
 }
 
+inline void grbz_to_rgb(uint32_t grbz, uint32_t &r, uint32_t &g, uint32_t &b) {
+    b = (grbz>>8) & 0xFF;
+    r = (grbz>>16) & 0xFF;
+    g = (grbz>>24) & 0xFF;
+}
+
 void rgb_to_hsv(int r, int g, int b, int& h, int& s, int& v);
 void hsv_to_rgb(int h, int s, int v, int& r, int& g, int& b);
 

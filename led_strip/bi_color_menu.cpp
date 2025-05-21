@@ -73,6 +73,18 @@ void BiColorMenu::generate_random_flashes()
         flash_value_[iled] = 255;
         x = rng_();
     }
+    int iled0 = pio_.back() ? pio_.nled() - pio_.non() : 0;
+    for(int iled=0; iled<pio_.non(); iled++) {
+        uint32_t w = flash_value_[iled];
+        if(w > 0) {
+            uint32_t r,g,b;
+            grbz_to_rgb(color_codes_[iled0 + iled], r, g, b);
+            r = std::max(r, w);
+            g = std::max(b, w);
+            b = std::max(b, w);
+            color_codes_[iled0 + iled] = rgb_to_grbz(r, g, b);
+        }
+    }
 }
 
 uint32_t BiColorMenu::color_code(int iled, bool debug)
@@ -113,12 +125,6 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
         b = c0_.b();
     }
 
-    if(flash_value_[iled] > 0) {
-        r = std::max(r, flash_value_[iled]);
-        g = std::max(g, flash_value_[iled]);
-        b = std::max(b, flash_value_[iled]);
-    }
-
     if(debug) {
         printf("%3d: %3d %3d %3d\n", iled, r, g, b);
     }
@@ -129,10 +135,6 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
 void BiColorMenu::send_color_string(bool flash)
 {
     // puts("Sending color string .....");
-
-    if(flash) {
-        generate_random_flashes();
-    }
 
     if(pio_.back()) {
         int nperiod = std::min(pio_.non(), period_);
@@ -150,6 +152,10 @@ void BiColorMenu::send_color_string(bool flash)
         for(int iled=nperiod, jled=0; iled<pio_.non(); iled++,jled++) {
             color_codes_[iled] = color_codes_[jled];
         }
+    }
+
+    if(flash) {
+        generate_random_flashes();
     }
 
     pio_.put_pixel_vector(color_codes_);
