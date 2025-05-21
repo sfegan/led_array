@@ -168,7 +168,8 @@ std::vector<SimpleItemValueMenu::MenuItem> BiColorMenu::make_menu_items()
     menu_items.at(MIP_PERIOD)      = {"-/p/+   : Decrease/Set/Increase transition period in LEDs", 5, "20"};
     menu_items.at(MIP_HOLD)        = {"[/m/]   : Decrease/Set/Increase maintain length (0..127)", 3, "0"};
     menu_items.at(MIP_BALANCE)     = {"</w/>   : Decrease/Set/Increase balance (-128..128)", 4, "0"};
-    menu_items.at(MIP_SPEED)       = {"Left/Right : Decrease/Increase speed", 5, "0"};
+    menu_items.at(MIP_SPEED)       = {"Left/Right : Decrease/Increase speed", 3, "0"};
+    menu_items.at(MIP_FLASH_PROB)  = {"Down/Up    : Decrease/Increase flash probability", 3, "0"};
 
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
@@ -367,6 +368,13 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         for(int iled=0; iled<pio_.non(); iled++) {
             uint32_t cc  = color_code(iled, true);
         }
+        printf("p_len = %d\n", p_len_);
+        printf("trans_len = %d\n", trans_len_);
+        printf("up_start = %d\n", up_start_);
+        printf("up_end = %d\n", up_end_);
+        printf("c1_hold_end = %d\n", c1_hold_end_);
+        printf("down_end = %d\n", down_end_);   
+        printf("non_flash_prob = %d\n", non_flash_prob_);
         break;
 
     default:
