@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "pico/time.h"
 #include "hardware/pio.h"
 
@@ -91,6 +92,12 @@ public:
     inline void put_pixel(uint32_t pixel_code, uint32_t nled) const {
         hard_assert(program_activated_);
         for(unsigned i=0; i<nled; i++) {
+            pio_sm_put_blocking(pio_, sm_, pixel_code);
+        }
+    }
+    inline void put_pixel_vector(std::vector<uint32_t>& pixel_codes) const {
+        hard_assert(program_activated_);
+        for(uint32_t pixel_code : pixel_codes) {
             pio_sm_put_blocking(pio_, sm_, pixel_code);
         }
     }

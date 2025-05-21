@@ -52,4 +52,7 @@ private:
     int hold_ = 0;
     int balance_ = 0;
     int phase_ = 0;
+
+    std::vector<uint32_t> color_codes_;
+    std::vector<uint32_t> flash_value_;
 };

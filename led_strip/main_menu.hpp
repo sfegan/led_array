@@ -5,6 +5,9 @@
 #include "../common/menu.hpp"
 #include "../common/color_led.hpp"
 
+#include "mono_color_menu.hpp"
+#include "bi_color_menu.hpp"
+
 class MainMenu: public SimpleItemValueMenu {
 public:
     MainMenu();
@@ -28,4 +31,6 @@ private:
     static std::vector<MenuItem> make_menu_items();
 
     SerialPIOMenu pio_;
+    MonoColorMenu mono_color_menu_;
+    BiColorMenu bi_color_menu_;
 };

@@ -60,7 +60,7 @@ uint32_t BiColorMenu::color_code(int iled)
     int up_end = (up_start + trans_len) % p;
     int c1_hold_end = (up_end + hold_len + dhold_len + p) % p;
     int down_end = (c1_hold_end + trans_len) % p;
-    int c0_hold_end = (down_end + hold_len - dhold_len + p) % p;
+    // int c0_hold_end = (down_end + hold_len - dhold_len + p) % p;
 
     // Map iled into the period
     int idx = iled % p;
@@ -124,16 +124,23 @@ void BiColorMenu::send_color_string()
 {
     // puts("Sending color string .....");
     if(pio_.back()) {
-        pio_.put_pixel(0, pio_.nled()-pio_.non());
-        for(int iled=pio_.non(); iled>0; ) {
-            pio_.put_pixel(color_code(--iled), 1);
+        int nperiod = std::min(pio_.non(), period_);
+        for(int iled=0, jled=pio_.nled(); iled<nperiod; iled++) {
+            color_codes_[--jled] = color_code(iled);
+        }
+        for(int iled=nperiod, jled=pio_.nled()-nperiod, kled=pio_.nled(); iled<pio_.non(); iled++) {
+            color_codes_[--jled] = color_codes_[--kled];
         }
     } else {
-        for(int iled=0; iled<pio_.non(); iled++) {
-            pio_.put_pixel(color_code(iled), 1);
+        int nperiod = std::min(pio_.non(), period_);
+        for(int iled=0; iled<nperiod; iled++) {
+            color_codes_[iled] = color_code(iled);
         }
-        pio_.put_pixel(0, pio_.nled()-pio_.non());
+        for(int iled=nperiod, jled=0; iled<pio_.non(); iled++,jled++) {
+            color_codes_[iled] = color_codes_[jled];
+        }
     }
+    pio_.put_pixel_vector(color_codes_);
     pio_.flush();
     // puts("..... color string sent");
 }
@@ -147,8 +154,8 @@ std::vector<SimpleItemValueMenu::MenuItem> BiColorMenu::make_menu_items()
     RGBHSVMenuItems::make_menu_items(menu_items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
 
     menu_items.at(MIP_PERIOD)      = {"-/p/+   : Decrease/Set/Increase transition period in LEDs", 5, "20"};
-    menu_items.at(MIP_HOLD)        = {"[/m/]   : Decrease/Set/Increase maintain length", 3, "0"};
-    menu_items.at(MIP_BALANCE)     = {"</w/>   : Decrease/Set/Increase balance", 4, "0"};
+    menu_items.at(MIP_HOLD)        = {"[/m/]   : Decrease/Set/Increase maintain length (0..127)", 3, "0"};
+    menu_items.at(MIP_BALANCE)     = {"</w/>   : Decrease/Set/Increase balance (-128..128)", 4, "0"};
 
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
@@ -181,6 +188,10 @@ void BiColorMenu::set_balance_value(bool draw)
 
 bool BiColorMenu::event_loop_starting(int& return_code)
 {
+    color_codes_.resize(pio_.nled());
+    flash_value_.resize(pio_.nled());
+    color_codes_.assign(pio_.nled(), 0);
+    flash_value_.assign(pio_.nled(), 0);
     pio_.activate_program();
     send_color_string();
     return true;
@@ -270,7 +281,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         break; 
     case 'w':
     case 'W':
-        if(InplaceInputMenu::input_value_in_range(balance_, -128, 128, this, MIP_BALANCE, 3)) {
+        if(InplaceInputMenu::input_value_in_range(balance_, -128, 128, this, MIP_BALANCE, 4)) {
             send_color_string();
         }
         set_balance_value();

@@ -5,8 +5,6 @@
 
 #include "main.hpp"
 #include "main_menu.hpp"
-#include "mono_color_menu.hpp"
-#include "bi_color_menu.hpp"
 
 namespace {
     static BuildDate build_date(__DATE__,__TIME__);
@@ -30,7 +28,9 @@ std::vector<SimpleItemValueMenu::MenuItem> MainMenu::make_menu_items() {
 
 MainMenu::MainMenu():
     SimpleItemValueMenu(make_menu_items(), std::string("WS2812 pattern generator (Build ")+BuildDate::latest_build_date+")"), 
-    pio_(WS2812_DEFAULT_PIN, WS2812_DEFAULT_BAUDRATE)
+    pio_(WS2812_DEFAULT_PIN, WS2812_DEFAULT_BAUDRATE),
+    mono_color_menu_(pio_),
+    bi_color_menu_(pio_)
 {
     timer_interval_us_ = 1000000; // 1Hz
 }
@@ -50,20 +50,12 @@ bool MainMenu::process_key_press(int key, int key_count, int& return_code,
         break;
         
     case 'm': 
-        {
-            // puts("Instantating mono-color menu");
-            MonoColorMenu menu(pio_);
-            // puts("Starting event loop");
-            menu.event_loop();
-            this->redraw();
-        }
+        mono_color_menu_.event_loop();
+        this->redraw();
         break;
     case 'b': 
-        {
-            BiColorMenu menu(pio_);
-            menu.event_loop();
-            this->redraw();
-        }
+        bi_color_menu_.event_loop();
+        this->redraw();
         break;
         
     case 7: /* ctrl-g : secret display of menu parameters - to remove */
