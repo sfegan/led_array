@@ -94,6 +94,8 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
         // c0 -> c1 (blend)
         int rel = (idx - up_start + p_len) % p_len;
         int t_fixed = rel / trans_len;
+        printf("%3d: %d %d %d\n", iled, idx, rel, t_fixed);
+
         r = (c0_.r() * (FRAC_ONE - t_fixed) + c1_.r() * t_fixed) >> FRAC_BITS;
         g = (c0_.g() * (FRAC_ONE - t_fixed) + c1_.g() * t_fixed) >> FRAC_BITS;
         b = (c0_.b() * (FRAC_ONE - t_fixed) + c1_.b() * t_fixed) >> FRAC_BITS;
@@ -118,8 +120,9 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
         b = c0_.b();
     }
 
-    printf("%3d: %3d %3d %3d %d %d %d\n", iled, r, g, b, 
-        idx, up_start, up_end);
+    if(debug) {
+        printf("%3d: %3d %3d %3d\n", iled, r, g, b);
+    }
 
     return rgb_to_grbz(r, g, b);
 }
