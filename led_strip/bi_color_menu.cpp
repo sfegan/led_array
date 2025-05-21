@@ -41,7 +41,7 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
     // Convert hold_ and balance_ to 0..65535
     int phase_frac = phase_ << (FRAC_BITS - 16);
     int hold_frac = hold_ << (FRAC_BITS - 8);
-    int balance_frac = balance_ << (FRAC_BITS - 8);
+    int balance_frac = balance_ << (FRAC_BITS - 7);
 
     // Calculate region lengths (scaled by 65536)
     int p_len = p << FRAC_BITS;
@@ -160,9 +160,9 @@ std::vector<SimpleItemValueMenu::MenuItem> BiColorMenu::make_menu_items()
 
     RGBHSVMenuItems::make_menu_items(menu_items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
 
-    menu_items.at(MIP_PERIOD)      = {"-/p/+      : Decrease/Set/Increase transition period in LEDs", 5, "20"};
-    menu_items.at(MIP_HOLD)        = {"[/m/]      : Decrease/Set/Increase maintain length (0..127)", 3, "0"};
-    menu_items.at(MIP_BALANCE)     = {"</w/>      : Decrease/Set/Increase balance (-128..128)", 4, "0"};
+    menu_items.at(MIP_PERIOD)      = {"-/p/+   : Decrease/Set/Increase transition period in LEDs", 5, "20"};
+    menu_items.at(MIP_HOLD)        = {"[/m/]   : Decrease/Set/Increase maintain length (0..127)", 3, "0"};
+    menu_items.at(MIP_BALANCE)     = {"</w/>   : Decrease/Set/Increase balance (-128..128)", 4, "0"};
     menu_items.at(MIP_SPEED)       = {"Left/Right : Decrease/Increase speed", 5, "0"};
 
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
@@ -353,7 +353,7 @@ bool BiColorMenu::process_timer(bool controller_is_connected, int& return_code,
     }
 
     if(speed_ != 0) {
-        phase_ = (phase_ + (speed_<<7)) % 65536;
+        phase_ = (phase_ + (speed_<<6)) % 65536;
         send_color_string();
     }
 
