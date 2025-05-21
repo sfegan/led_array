@@ -306,6 +306,13 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
             send_color_string();
         }
         break;
+    case 'z':
+    case 'Z':
+        if(speed_ != 0) {
+            speed_ = 0;
+            set_speed_value();
+        }
+        break;
 
     case 'q':
     case 'Q':
@@ -345,7 +352,7 @@ bool BiColorMenu::process_timer(bool controller_is_connected, int& return_code,
     }
 
     if(speed_ != 0) {
-        phase_ = (phase_ + speed_) % 65536;
+        phase_ = (phase_ + (speed_<<4)) % 65536;
         send_color_string();
     }
 
