@@ -93,7 +93,7 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
                (up_start > up_end && (idx >= up_start || idx < up_end))) {
         // c0 -> c1 (blend)
         int rel = (idx - up_start + p_len) % p_len;
-        int t_fixed = rel * FRAC_ONE / trans_len;
+        int t_fixed = rel / (trans_len >> FRAC_BITS);
         printf("%3d: %d %d %d\n", iled, idx, rel, t_fixed);
 
         r = (c0_.r() * (FRAC_ONE - t_fixed) + c1_.r() * t_fixed) >> FRAC_BITS;
@@ -109,7 +109,7 @@ uint32_t BiColorMenu::color_code(int iled, bool debug)
                (c1_hold_end > down_end && (idx >= c1_hold_end || idx < down_end))) {
         // c1 -> c0 (blend)
         int rel = (idx - c1_hold_end + p_len) % p_len;
-        int t_fixed = FRAC_ONE - rel / trans_len;
+        int t_fixed = FRAC_ONE - rel / (trans_len >> FRAC_BITS);
         r = (c0_.r() * (FRAC_ONE - t_fixed) + c1_.r() * t_fixed) >> FRAC_BITS;
         g = (c0_.g() * (FRAC_ONE - t_fixed) + c1_.g() * t_fixed) >> FRAC_BITS;
         b = (c0_.b() * (FRAC_ONE - t_fixed) + c1_.b() * t_fixed) >> FRAC_BITS;
