@@ -128,7 +128,7 @@ uint32_t BiColorMenu::color_code(int i_led)
         b = c0_.b();
     }
 
-    return rgb_to_grbz(r, g, b);
+    return rgb_to_grb(r, g, b);
 }
 
 void BiColorMenu::send_color_string()
