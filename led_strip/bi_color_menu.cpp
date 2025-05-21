@@ -50,17 +50,17 @@ uint32_t BiColorMenu::color_code(int iled)
     if (trans_len < 0) trans_len = 0;
 
     // Compute offset for balance
-    int offset = ((p - 2 * hold_len - 2 * trans_len) * balance_frac + (FRAC_ONE/2)) >> FRAC_BITS;
+    int dhold_len = (hold_len * balance_frac) >> FRAC_BITS;
 
     // Apply phase (phase_ is 0..65535, maps to 0..p-1)
     int phase_offset = (phase_ * p) >> 16;
 
     // Calculate the four region boundaries
-    int up_start = (offset + phase_offset + p) % p;
+    int up_start = (phase_offset + p) % p;
     int up_end = (up_start + trans_len) % p;
-    int c1_hold_end = (up_end + hold_len) % p;
+    int c1_hold_end = (up_end + hold_len + dhold_len + p) % p;
     int down_end = (c1_hold_end + trans_len) % p;
-    int c0_hold_end = (down_end + hold_len) % p;
+    int c0_hold_end = (down_end + hold_len - dhold_len + p) % p;
 
     // Map iled into the period
     int idx = iled % p;
@@ -69,8 +69,8 @@ uint32_t BiColorMenu::color_code(int iled)
 
     if (trans_len == 0) {
         // Degenerate case: square wave, just alternate between c0 and c1
-        int c1_start = (offset + phase_offset + p) % p;
-        int c1_end = (c1_start + hold_len) % p;
+        int c1_start = (phase_offset + p) % p;
+        int c1_end = (c1_start + hold_len + dhold_len + p) % p;
         bool in_c1;
         if (hold_len == 0) {
             in_c1 = false;
@@ -147,8 +147,8 @@ std::vector<SimpleItemValueMenu::MenuItem> BiColorMenu::make_menu_items()
     RGBHSVMenuItems::make_menu_items(menu_items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
 
     menu_items.at(MIP_PERIOD)      = {"-/p/+   : Decrease/Set/Increase transition period in LEDs", 5, "20"};
-    menu_items.at(MIP_HOLD)        = {"[/m/]   : Decrease/Set/Increase maintain percentage", 3, "0"};
-    menu_items.at(MIP_BALANCE)     = {"</v/>   : Decrease/Set/Increase balance", 3, "50"};
+    menu_items.at(MIP_HOLD)        = {"[/m/]   : Decrease/Set/Increase maintain length", 3, "0"};
+    menu_items.at(MIP_BALANCE)     = {"</w/>   : Decrease/Set/Increase balance", 4, "0"};
 
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
@@ -257,20 +257,20 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         break;
 
     case '>':
-        if(increase_value_in_range(balance_, 255, (key_count >= 15 ? 5 : 1), key_count==1)) {
+        if(increase_value_in_range(balance_, 128, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_balance_value();
             send_color_string();
         }
         break;
     case '<':
-        if(decrease_value_in_range(balance_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
+        if(decrease_value_in_range(balance_, -128, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_balance_value();
             send_color_string();
         }
         break; 
-    case 'v':
-    case 'V':
-        if(InplaceInputMenu::input_value_in_range(balance_, 0, 255, this, MIP_BALANCE, 3)) {
+    case 'w':
+    case 'W':
+        if(InplaceInputMenu::input_value_in_range(balance_, -128, 128, this, MIP_BALANCE, 3)) {
             send_color_string();
         }
         set_balance_value();

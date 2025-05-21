@@ -50,6 +50,6 @@ private:
     int cset_ = 0;
     int period_ = 20;
     int hold_ = 0;
-    int balance_ = 50;
+    int balance_ = 0;
     int phase_ = 0;
 };
