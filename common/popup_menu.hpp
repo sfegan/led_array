@@ -21,7 +21,9 @@ private:
     unsigned timeout_sec_ = 0; 
     bool press_to_quit_ = false;
 
-    unsigned timer_calls_ = 0;
+    unsigned timer_count_ = 0;
+    unsigned timer_interval_ = 0;
+    unsigned dot_count_ = 0;
     bool first_redraw_ = true;
 };
 
