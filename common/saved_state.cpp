@@ -50,7 +50,7 @@ void SavedStateManager::call_flash_range_program(void *param) {
         reinterpret_cast<const uint8_t*>(ssm->state_.data()), ssm->flash_target_size_);
 }
 
-bool SavedStateManager::save_state()
+bool SavedStateManager::save_state(bool multicore)
 {
     std::fill(state_.begin(), state_.end(), 0);
     unsigned istate = 0;
@@ -68,23 +68,30 @@ bool SavedStateManager::save_state()
         }
     }
 
-    // Flash is "execute in place" and so will be in use when any code that is stored in flash runs, e.g. an interrupt handler
-    // or code running on a different core.
-    // Calling flash_range_erase or flash_range_program at the same time as flash is running code would cause a crash.
-    // flash_safe_execute disables interrupts and tries to cooperate with the other core to ensure flash is not in use
-    // See the documentation for flash_safe_execute and its assumptions and limitations
+    if(multicore) {
+        // Flash is "execute in place" and so will be in use when any code that is stored in flash runs, e.g. an interrupt handler
+        // or code running on a different core.
+        // Calling flash_range_erase or flash_range_program at the same time as flash is running code would cause a crash.
+        // flash_safe_execute disables interrupts and tries to cooperate with the other core to ensure flash is not in use
+        // See the documentation for flash_safe_execute and its assumptions and limitations
 
-    int rc = flash_safe_execute(call_flash_range_erase, (void*)this, UINT32_MAX);
-    if(rc != PICO_OK) {
-        printf("Flash erase failed: %d\n", rc);
-        return false;
-    }
+        int rc = flash_safe_execute(call_flash_range_erase, (void*)this, UINT32_MAX);
+        if(rc != PICO_OK) {
+            printf("Flash erase failed: %d\n", rc);
+            return false;
+        }
 
-    rc = flash_safe_execute(call_flash_range_program, (void*)this, UINT32_MAX);
-    if(rc != PICO_OK) {
-        printf("Flash program failed: %d\n", rc);
-        return false;
-    }
+        rc = flash_safe_execute(call_flash_range_program, (void*)this, UINT32_MAX);
+        if(rc != PICO_OK) {
+            printf("Flash program failed: %d\n", rc);
+            return false;
+        }
+    } else {
+        flash_range_erase(flash_target_offset_, flash_target_size_);
+    
+        flash_range_program(flash_target_offset_, 
+            reinterpret_cast<const uint8_t*>(state_.data()), flash_target_size_);
+    }    
 
     return true;
 }

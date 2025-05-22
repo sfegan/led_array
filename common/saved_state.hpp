@@ -17,7 +17,7 @@ public:
     SavedStateManager(unsigned max_state_size_words = 1024);
     ~SavedStateManager();
     void add_saved_state_supplier(SavedStateSupplierConsumer* supplier);
-    bool save_state();
+    bool save_state(bool multicore = false);
     bool load_state();
     virtual int32_t get_application_id() = 0;
 
