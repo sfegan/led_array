@@ -67,9 +67,16 @@ bool MainMenu::process_key_press(int key, int key_count, int& return_code,
 
     case 'D':
     case 'd':
-        for(unsigned i=0;i<100;++i) {
+        for(unsigned i=0;i<40;++i) {
             printf("%d: %d\n",i,state()[i]);
         }
+        break;
+
+    case 'L':
+    case 'l':
+        printf("Loading state ...\n");
+        sleep_ms(1000);
+        load_state();
         break;
 
     case 'W':
