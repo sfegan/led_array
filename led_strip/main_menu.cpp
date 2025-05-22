@@ -2,6 +2,7 @@
 #include "../common/build_date.hpp"
 #include "../common/menu.hpp"
 #include "../common/input_menu.hpp"
+#include "../common/popup_menu.hpp"
 
 #include "main.hpp"
 #include "main_menu.hpp"
@@ -72,19 +73,22 @@ bool MainMenu::process_key_press(int key, int key_count, int& return_code,
         }
         break;
 
-    case 'L':
-    case 'l':
-        printf("Loading state ...\n");
-        sleep_ms(1000);
-        load_state(true);
+    case 18:
+        {
+            load_state(true);
+            PopupMenu pm("State loaded from flash. Press any key.", 0, true, this, "Information");
+            pm.event_loop();
+            this->redraw();
+        }
         break;
 
-    case 'W':
-    case 'w':
     case 23:
-        printf("Saving state ...\n");
-        sleep_ms(1000);
-        save_state();
+        {
+            save_state();
+            PopupMenu pm("State written to flash", 2, false, this, "Information");
+            pm.event_loop();
+            this->redraw();
+        }
         break;
 
     case 7: /* ctrl-g : secret display of menu parameters - to remove */

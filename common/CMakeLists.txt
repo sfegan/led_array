@@ -1,5 +1,5 @@
 add_library(lsp_common STATIC build_date.cpp input_menu.cpp reboot_menu.cpp
-        menu_event_loop.cpp menu.cpp color_led.cpp saved_state.cpp)
+        menu_event_loop.cpp menu.cpp color_led.cpp saved_state.cpp popup_menu.cpp)
 
 pico_generate_pio_header(lsp_common ${CMAKE_CURRENT_SOURCE_DIR}/ws2812.pio 
         OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
