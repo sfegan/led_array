@@ -434,8 +434,13 @@ bool BiColorMenu::set_saved_state(const std::vector<int32_t>& state)
     if(state.size() != 11) {
         return false;
     }
-    c0_.set_rgb(state[0], state[1], state[2], false);
-    c1_.set_rgb(state[3], state[4], state[5], false);
+    if(cset_ == 0) {
+        c0_.set_rgb(state[0], state[1], state[2], false);
+        c1_.set_rgb(state[3], state[4], state[5], false);
+    } else {
+        c1_.set_rgb(state[0], state[1], state[2], false);
+        c0_.set_rgb(state[3], state[4], state[5], false);
+    }
     period_ = state[6];
     hold_ = state[7];
     balance_ = state[8];
