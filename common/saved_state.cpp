@@ -76,11 +76,13 @@ bool SavedStateManager::save_state()
 
     int rc = flash_safe_execute(call_flash_range_erase, (void*)this, UINT32_MAX);
     if(rc != PICO_OK) {
+        printf("Flash erase failed: %d\n", rc);
         return false;
     }
 
     rc = flash_safe_execute(call_flash_range_program, (void*)this, UINT32_MAX);
     if(rc != PICO_OK) {
+        printf("Flash program failed: %d\n", rc);
         return false;
     }
 
