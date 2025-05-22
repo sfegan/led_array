@@ -108,3 +108,31 @@ bool MonoColorMenu::process_timer(bool controller_is_connected, int& return_code
     set_heartbeat(!heartbeat_);
     return true;
 }
+
+std::vector<int32_t> MonoColorMenu::get_saved_state()
+{
+    std::vector<int32_t> state;
+    state.push_back(c_.r());
+    state.push_back(c_.g());
+    state.push_back(c_.b());
+    return state;
+}
+
+bool MonoColorMenu::set_saved_state(const std::vector<int32_t>& state)
+{
+    if(state.size() != 3) {
+        return false;
+    }
+    c_.set_rgb(state[0], state[1], state[2], false);
+    return true;
+}
+
+int32_t MonoColorMenu::get_version()
+{
+    return 0;
+}
+
+int32_t MonoColorMenu::get_supplier_id()
+{
+    return 0x4d434f4d; // "MOCM"
+}

@@ -385,6 +385,45 @@ SerialPIOMenu::SerialPIOMenu(int pin, int baudrate):
     set_lamp_test_value(false);
 }
 
+std::vector<int32_t> SerialPIOMenu::get_saved_state()
+{
+    std::vector<int32_t> state;
+    state.push_back(pin_);
+    state.push_back(baudrate_);
+    state.push_back(nled_);
+    state.push_back(non_);
+    state.push_back(back_ ? 1 : 0);
+    return state;
+}
+
+bool SerialPIOMenu::set_saved_state(const std::vector<int32_t>& state)
+{
+    if(state.size() != 5) {
+        return false;
+    }
+    pin_ = state[0];
+    baudrate_ = state[1];
+    nled_ = state[2];
+    non_ = state[3];
+    back_ = (state[4] != 0);
+    set_pin_value(false);
+    set_baudrate_value(false);
+    set_nled_value(false);
+    set_non_value(false);
+    set_back_value(false);
+    return true;
+}
+
+int32_t SerialPIOMenu::get_version()
+{
+    return 0;
+}
+    
+int32_t SerialPIOMenu::get_supplier_id()
+{
+    return 0x4f495053; // "SPIO"
+}
+
 SerialPIOMenu::~SerialPIOMenu()
 {
     // nothing to see here

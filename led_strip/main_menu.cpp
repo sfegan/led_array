@@ -33,6 +33,12 @@ MainMenu::MainMenu():
     bi_color_menu_(pio_)
 {
     timer_interval_us_ = 1000000; // 1Hz
+    add_saved_state_supplier(this);
+    add_saved_state_supplier(&pio_);
+    add_saved_state_supplier(&mono_color_menu_);
+    add_saved_state_supplier(&bi_color_menu_);
+
+    load_state();
 }
 
 MainMenu::~MainMenu()
@@ -58,6 +64,11 @@ bool MainMenu::process_key_press(int key, int key_count, int& return_code,
         this->redraw();
         break;
         
+
+    case 23:
+        save_state();
+        break;
+
     case 7: /* ctrl-g : secret display of menu parameters - to remove */
         cls();
         curpos(1,1);
@@ -95,4 +106,35 @@ bool MainMenu::process_timer(bool controller_is_connected, int& return_code, abs
         set_heartbeat(!heartbeat_);
     }
     return true;
+}
+
+std::vector<int32_t> MainMenu::get_saved_state()
+{
+    std::vector<int32_t> state;
+    state.push_back(selected_menu_);
+    return state;
+}
+
+bool MainMenu::set_saved_state(const std::vector<int32_t>& state)
+{
+    if(state.size() != 1) {
+        return false;
+    }
+    selected_menu_ = state[0];
+    return true;
+}
+
+int32_t MainMenu::get_version()
+{
+    return 0;
+}
+
+int32_t MainMenu::get_supplier_id()
+{
+    return 0x4e49414d; // "MAIN"
+}
+
+int32_t MainMenu::get_application_id()
+{
+    return 0x17A92635;
 }

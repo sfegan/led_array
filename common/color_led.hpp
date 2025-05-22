@@ -5,6 +5,7 @@
 #include "hardware/pio.h"
 
 #include "menu.hpp"
+#include "saved_state.hpp"
 
 inline uint32_t rgb_to_grbz(uint32_t r, uint32_t g, uint32_t b) {
     return ((r&0xFF) << 16) | ((g&0xFF) << 24) | ((b&0xFF) << 8);
@@ -134,7 +135,7 @@ protected:
     uint offset_;  
 };
 
-class SerialPIOMenu: public SerialPIO, public SimpleItemValueMenu {
+class SerialPIOMenu: public SerialPIO, public SimpleItemValueMenu, public SavedStateSupplierConsumer {
 public:
     SerialPIOMenu(int pin, int baudrate = 800000);
     ~SerialPIOMenu() override;
@@ -146,6 +147,11 @@ public:
         absolute_time_t& next_timer) override;
     bool process_timer(bool controller_is_connected, int& return_code,
         absolute_time_t& next_timer) override;
+
+    std::vector<int32_t> get_saved_state() override;
+    bool set_saved_state(const std::vector<int32_t>& state) override;
+    int32_t get_version() override;
+    int32_t get_supplier_id() override;
 
 private:
     enum MenuItemPositions {

@@ -411,3 +411,51 @@ bool BiColorMenu::process_timer(bool controller_is_connected, int& return_code,
 
     return true;
 }
+
+std::vector<int32_t> BiColorMenu::get_saved_state()
+{
+    std::vector<int32_t> state;
+    state.push_back(c0_.r());
+    state.push_back(c0_.g());
+    state.push_back(c0_.b());
+    state.push_back(c1_.r());
+    state.push_back(c1_.g());
+    state.push_back(c1_.b());
+    state.push_back(period_);
+    state.push_back(hold_);
+    state.push_back(balance_);
+    state.push_back(speed_);
+    state.push_back(flash_prob_);
+    return state;
+}
+
+bool BiColorMenu::set_saved_state(const std::vector<int32_t>& state)
+{
+    if(state.size() != 11) {
+        return false;
+    }
+    c0_.set_rgb(state[0], state[1], state[2], false);
+    c1_.set_rgb(state[3], state[4], state[5], false);
+    period_ = state[6];
+    hold_ = state[7];
+    balance_ = state[8];
+    speed_ = state[9];
+    flash_prob_ = state[10];
+    set_period_value(false);
+    set_hold_value(false);
+    set_balance_value(false);
+    set_speed_value(false);
+    set_flash_prob_value(false);
+    update_calculations();
+    return true;
+}
+
+int32_t BiColorMenu::get_version()
+{
+    return 0;
+}
+
+int32_t BiColorMenu::get_supplier_id()
+{
+    return 0x4d434f4d; // "MOCM"
+}
