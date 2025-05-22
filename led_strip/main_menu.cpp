@@ -65,7 +65,15 @@ bool MainMenu::process_key_press(int key, int key_count, int& return_code,
         break;
         
 
+    case 4:
+        for(unsigned i=0;i<100;++i) {
+            printf("%d: %d\n",i,state()[i])
+        }
+        break;
+
     case 23:
+        printf("Saving state ...\n");
+        sleep_ms(1000);
         save_state();
         break;
 

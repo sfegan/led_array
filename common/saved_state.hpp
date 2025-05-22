@@ -20,6 +20,8 @@ public:
     bool save_state();
     bool load_state();
     virtual int32_t get_application_id() = 0;
+
+    const std::vector<int32_t>& state() const { return state_; }
 private:
     unsigned flash_target_size_;
     unsigned flash_target_offset_;
