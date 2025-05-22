@@ -20,11 +20,12 @@ namespace {
 
 PopupMenu::PopupMenu(const std::string& message, unsigned timeout_sec,
         bool press_to_quit, Menu* base_menu, const std::string& title): 
-    FramedMenu(title,7,message.size()+timeout_sec+4,0), base_menu_(base_menu),
+    FramedMenu(title,7,message.size()+timeout_sec+6,0), base_menu_(base_menu),
     message_(message), timeout_sec_(timeout_sec), 
     press_to_quit_(timeout_sec==0 or press_to_quit)
 { 
     cls_on_redraw_ = false;
+    timer_interval_us_ = 1000000; // 1Hz
 }
 
 void PopupMenu::redraw()
@@ -62,7 +63,7 @@ bool PopupMenu::process_timer(bool controller_is_connected, int& return_code,
             return_code = 0;
             return false;
         }
-        curpos(frame_r_+5, frame_c_+2+message_.size()+timer_calls_);
+        curpos(frame_r_+5, frame_c_+3+message_.size()+timer_calls_);
         putchar_raw('.');
         ++timer_calls_;
     }
