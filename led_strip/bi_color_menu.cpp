@@ -80,7 +80,7 @@ void BiColorMenu::generate_random_flashes()
             uint32_t r,g,b;
             grbz_to_rgb(color_codes_[iled0 + iled], r, g, b);
             r = std::max(r, w);
-            g = std::max(b, w);
+            g = std::max(g, w);
             b = std::max(b, w);
             color_codes_[iled0 + iled] = rgb_to_grbz(r, g, b);
         }
