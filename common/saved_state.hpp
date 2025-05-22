@@ -18,7 +18,7 @@ public:
     ~SavedStateManager();
     void add_saved_state_supplier(SavedStateSupplierConsumer* supplier);
     bool save_state(bool multicore = false);
-    bool load_state();
+    bool load_state(bool debug = false);
     virtual int32_t get_application_id() = 0;
 
     const std::vector<int32_t>& state() const { return state_; }

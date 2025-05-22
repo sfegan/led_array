@@ -76,7 +76,7 @@ bool MainMenu::process_key_press(int key, int key_count, int& return_code,
     case 'l':
         printf("Loading state ...\n");
         sleep_ms(1000);
-        load_state();
+        load_state(true);
         break;
 
     case 'W':

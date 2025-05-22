@@ -90,16 +90,20 @@ bool SavedStateManager::save_state(bool multicore)
         flash_range_erase(flash_target_offset_, flash_target_size_);
         flash_range_program(flash_target_offset_, 
             reinterpret_cast<const uint8_t*>(state_.data()), flash_target_size_);
-    }    
+    }
 
     return true;
 }
 
-bool SavedStateManager::load_state()
+bool SavedStateManager::load_state(bool debug)
 {
     std::copy(base_, base_ + state_.size(), state_.begin());
     unsigned istate = 0;
     if(state_[istate++] != get_application_id()) {
+        if(debug) {
+            printf("Saved state application ID mismatch: %d != %d\n", 
+                state_[istate-1], get_application_id());
+        }
         return false;
     }
     while(istate < state_.size()) {
@@ -113,21 +117,29 @@ bool SavedStateManager::load_state()
         int32_t version = state_[istate++];
         int32_t size = state_[istate++];
         if(istate + size > state_.size()) {
+            printf("Saved state size mismatch: %d > %d\n", 
+                istate + size, state_.size());
             return false;
         }
         std::vector<int32_t> s(size);
         for(int i=0; i<size; ++i) {
             s[i] = state_[istate++];
         }
+        bool found = false;
+        bool loaded = false;
         for(auto& supplier : suppliers_) {
-            if(supplier->get_supplier_id() == supplier_id) {
-                if(supplier->get_version() != version) {
-                    return false;
-                }
-                if(!supplier->set_saved_state(s)) {
-                    return false;
-                }
+            if(supplier->get_supplier_id() == supplier_id 
+                and supplier->get_version() == version) 
+            {
+                found = true;
+                loaded = supplier->set_saved_state(s);
             }
+        }
+        if(debug) {
+            char code[5] = {0,0,0,0,0};
+            *reinterpret_cast<int32_t*>(code) = supplier_id;
+            printf("State %s, ver=%d, size=%d, %s\n", 
+                code, version, size, loaded ? "loaded" : (found ? "not loaded" : "not found"));
         }
     }
     return true;
