@@ -80,7 +80,7 @@ bool MainMenu::process_key_press(int key, int key_count, int& return_code,
         break;
 
     case 'W':
-    case 'w'
+    case 'w':
     case 23:
         printf("Saving state ...\n");
         sleep_ms(1000);
