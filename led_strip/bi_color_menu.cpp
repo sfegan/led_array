@@ -457,5 +457,5 @@ int32_t BiColorMenu::get_version()
 
 int32_t BiColorMenu::get_supplier_id()
 {
-    return 0x4d434f4d; // "MOCM"
+    return 0x4d434942; // "BICM"
 }
