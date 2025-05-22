@@ -67,7 +67,7 @@ bool MainMenu::process_key_press(int key, int key_count, int& return_code,
 
     case 4:
         for(unsigned i=0;i<100;++i) {
-            printf("%d: %d\n",i,state()[i])
+            printf("%d: %d\n",i,state()[i]);
         }
         break;
 
