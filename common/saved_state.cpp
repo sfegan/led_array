@@ -88,7 +88,6 @@ bool SavedStateManager::save_state(bool multicore)
         }
     } else {
         flash_range_erase(flash_target_offset_, flash_target_size_);
-    
         flash_range_program(flash_target_offset_, 
             reinterpret_cast<const uint8_t*>(state_.data()), flash_target_size_);
     }    
