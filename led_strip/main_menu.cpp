@@ -88,7 +88,6 @@ bool MainMenu::process_menu_item(int key)
     }
     
     selected_menu_ = 0;
-    this->redraw();
     return true;
 }
 
@@ -96,6 +95,7 @@ bool MainMenu::process_key_press(int key, int key_count, int& return_code,
     const std::vector<std::string>& escape_sequence_parameters, absolute_time_t& next_timer)
 {
     if(process_menu_item(key)) {
+        this->redraw();
         return true;
     }
 
