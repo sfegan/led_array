@@ -11,7 +11,7 @@
 
 class BiColorMenu: public SimpleItemValueMenu, public SavedStateSupplierConsumer {
 public:
-BiColorMenu(SerialPIO& pio_);
+    BiColorMenu(SerialPIO& pio_, SavedStateManager* saved_state_manager = nullptr);
     virtual ~BiColorMenu() { }
     bool event_loop_starting(int& return_code) final;
     void event_loop_finishing(int& return_code) final;
@@ -56,6 +56,8 @@ private:
     void send_color_string(bool flash = false);
 
     SerialPIO& pio_;
+    SavedStateManager* saved_state_manager_ = nullptr;
+    
     RGBHSVMenuItems c0_;
     RGBHSVMenuItems c1_;
 

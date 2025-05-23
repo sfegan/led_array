@@ -47,25 +47,58 @@ MainMenu::~MainMenu()
     // nothing to see here
 }
 
-bool MainMenu::process_key_press(int key, int key_count, int& return_code,
-    const std::vector<std::string>& escape_sequence_parameters, absolute_time_t& next_timer)
+bool MainMenu::event_loop_starting(int& return_code)
 {
+    if(selected_menu_ != 0) {
+        PopupMenu pm("Starting selected menu, press any key to abort", 5, true, this, "Auto start");
+        auto pm_return = pm.event_loop();
+        if(pm_return == 0) {
+            process_menu_item(selected_menu_);
+        }
+    }
+    return true;
+}
+
+void MainMenu::event_loop_finishing(int& return_code)
+{
+    // nothing to see here
+}
+
+bool MainMenu::process_menu_item(int key)
+{
+    selected_menu_ = key;
+
     switch(key) {
     case 'S':
         pio_.event_loop();
-        this->redraw();
         break;
         
     case 'm': 
         mono_color_menu_.event_loop();
-        this->redraw();
         break;
+
     case 'b': 
         bi_color_menu_.event_loop();
-        this->redraw();
         break;
-        
 
+    default:
+        selected_menu_ = 0;
+        return false;
+    }
+    
+    selected_menu_ = 0;
+    this->redraw();
+    return true;
+}
+
+bool MainMenu::process_key_press(int key, int key_count, int& return_code,
+    const std::vector<std::string>& escape_sequence_parameters, absolute_time_t& next_timer)
+{
+    if(process_menu_item(key)) {
+        return true;
+    }
+
+    switch(key) {
     case 'D':
     case 'd':
         for(unsigned i=0;i<40;++i) {

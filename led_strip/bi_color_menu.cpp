@@ -6,7 +6,9 @@
 #include "../common/build_date.hpp"
 #include "../common/menu.hpp"
 #include "../common/input_menu.hpp"
+#include "../common/popup_menu.hpp"
 #include "../common/color_led.hpp"
+
 #include "main.hpp"
 #include "bi_color_menu.hpp"
 
@@ -14,9 +16,9 @@ namespace {
     static BuildDate build_date(__DATE__,__TIME__);
 }
 
-BiColorMenu::BiColorMenu(SerialPIO& pio):
+BiColorMenu::BiColorMenu(SerialPIO& pio, SavedStateManager* saved_state_manager):
     SimpleItemValueMenu(make_menu_items(), "Bi color menu"),
-    pio_(pio), 
+    pio_(pio), saved_state_manager_(saved_state_manager),
     c0_(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V),
     c1_(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V),
     rng_(123)
@@ -365,6 +367,15 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         }
         break;
 
+    case 23:
+        if(saved_state_manager_) {
+            saved_state_manager_->save_state();
+            PopupMenu pm("State written to flash", 2, false, this, "Information");
+            pm.event_loop();
+            this->redraw();
+        }
+        break;
+
     case 'q':
     case 'Q':
         return_code = 0;
@@ -372,7 +383,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
 
     case 'D':
         for(int iled=0; iled<pio_.non(); iled++) {
-            uint32_t cc  = color_code(iled, true);
+            color_code(iled, true);
         }
         printf("p_len = %d\n", p_len_);
         printf("trans_len = %d\n", trans_len_);
