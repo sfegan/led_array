@@ -10,7 +10,7 @@
 
 class MonoColorMenu: public SimpleItemValueMenu, public SavedStateSupplierConsumer {
 public:
-    MonoColorMenu(SerialPIO& pio_);
+    MonoColorMenu(SerialPIO& pio_, SavedStateManager* saved_state_manager = nullptr);
     virtual ~MonoColorMenu() { }
     bool event_loop_starting(int& return_code) final;
     void event_loop_finishing(int& return_code) final;
@@ -33,6 +33,7 @@ private:
         MIP_V,
         MIP_Z,
         MIP_W,
+        MIP_WRITE_STATE,
         MIP_EXIT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
     };
@@ -42,5 +43,7 @@ private:
     void send_color_string();
 
     SerialPIO& pio_;
+    SavedStateManager* saved_state_manager_ = nullptr;
+
     RGBHSVMenuItems c_;
 };

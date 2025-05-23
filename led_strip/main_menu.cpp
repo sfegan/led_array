@@ -31,7 +31,7 @@ std::vector<SimpleItemValueMenu::MenuItem> MainMenu::make_menu_items() {
 MainMenu::MainMenu():
     SimpleItemValueMenu(make_menu_items(), std::string("WS2812 pattern generator (Build ")+BuildDate::latest_build_date+")"), 
     pio_(WS2812_DEFAULT_PIN, WS2812_DEFAULT_BAUDRATE),
-    mono_color_menu_(pio_),
+    mono_color_menu_(pio_, this),
     bi_color_menu_(pio_, this)
 {
     timer_interval_us_ = 1000000; // 1Hz

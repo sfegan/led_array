@@ -17,7 +17,8 @@ SavedStateSupplierConsumer::~SavedStateSupplierConsumer()
 
 SavedStateManager::SavedStateManager(unsigned max_state_size_words):
     flash_target_size_(((max_state_size_words+1023)/1024)*1024*sizeof(int32_t)),
-    flash_target_offset_(PICO_FLASH_SIZE_BYTES - flash_target_size_),
+    flash_target_offset_(PICO_FLASH_SIZE_BYTES),
+    // flash_target_offset_(PICO_FLASH_SIZE_BYTES - flash_target_size_),
     base_(reinterpret_cast<const int32_t *>(XIP_BASE + flash_target_offset_)),
     suppliers_(),
     state_(flash_target_size_/sizeof(int32_t), 0)

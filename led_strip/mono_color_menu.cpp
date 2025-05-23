@@ -6,7 +6,9 @@
 #include "../common/build_date.hpp"
 #include "../common/menu.hpp"
 #include "../common/input_menu.hpp"
+#include "../common/popup_menu.hpp"
 #include "../common/color_led.hpp"
+
 #include "main.hpp"
 #include "mono_color_menu.hpp"
 
@@ -14,9 +16,10 @@ namespace {
     static BuildDate build_date(__DATE__,__TIME__);
 }
 
-MonoColorMenu::MonoColorMenu(SerialPIO& pio):
+MonoColorMenu::MonoColorMenu(SerialPIO& pio, SavedStateManager* saved_state_manager):
     SimpleItemValueMenu(make_menu_items(), "Mono color menu"),
-    pio_(pio), c_(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V)
+    pio_(pio), saved_state_manager_(saved_state_manager),
+    c_(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V)
 {
     timer_interval_us_ = 1000000; // 1Hz
     c_.redraw(false);
@@ -46,6 +49,7 @@ std::vector<SimpleItemValueMenu::MenuItem> MonoColorMenu::make_menu_items()
     menu_items.at(MIP_Z)           = {"z       : Zero all color components (black)", 0, ""};
     menu_items.at(MIP_W)           = {"W       : Max all color components (white)", 0, ""};
 
+    menu_items.at(MIP_WRITE_STATE) = {"Ctrl-w  : Write state to flash", 0, ""};
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
     return menu_items;
@@ -92,6 +96,15 @@ bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
     case 'Q':
         return_code = 0;
         return false;
+
+    case 23:
+        if(saved_state_manager_) {
+            saved_state_manager_->save_state();
+            PopupMenu pm("State written to flash", 2, false, this, "Information");
+            pm.event_loop();
+            this->redraw();
+        }
+        break;
 
     default:
         if(key_count==1) {
