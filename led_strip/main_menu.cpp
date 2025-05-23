@@ -23,6 +23,7 @@ std::vector<SimpleItemValueMenu::MenuItem> MainMenu::make_menu_items() {
     menu_items.at(MIP_PIO)         = {"S       : Setup WS2812 device", 0, ""};
     menu_items.at(MIP_MONO_COLOR)  = {"m       : Mono-color menu", 0, ""};
     menu_items.at(MIP_BI_COLOR)    = {"b       : Bi-color menu", 0, ""};
+    menu_items.at(MIP_WRITE_STATE) = {"Ctrl-w  : Write state to flash", 0, ""};
     menu_items.at(MIP_REBOOT)      = {"Ctrl-b  : Reboot flasher (press and hold)", 0, ""};
     return menu_items;
 }
@@ -31,7 +32,7 @@ MainMenu::MainMenu():
     SimpleItemValueMenu(make_menu_items(), std::string("WS2812 pattern generator (Build ")+BuildDate::latest_build_date+")"), 
     pio_(WS2812_DEFAULT_PIN, WS2812_DEFAULT_BAUDRATE),
     mono_color_menu_(pio_),
-    bi_color_menu_(pio_)
+    bi_color_menu_(pio_, this)
 {
     timer_interval_us_ = 1000000; // 1Hz
     add_saved_state_supplier(this);
@@ -50,7 +51,7 @@ MainMenu::~MainMenu()
 bool MainMenu::event_loop_starting(int& return_code)
 {
     if(selected_menu_ != 0) {
-        PopupMenu pm("Starting selected menu, press any key to abort", 5, true, this, "Auto start");
+        PopupMenu pm("Starting selected menu, press any key to abort", 5, true, nullptr, "Auto start");
         auto pm_return = pm.event_loop();
         if(pm_return == 0) {
             process_menu_item(selected_menu_);

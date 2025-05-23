@@ -38,6 +38,7 @@ private:
         MIP_BALANCE,
         MIP_SPEED,
         MIP_FLASH_PROB,
+        MIP_WRITE_STATE,
         MIP_EXIT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
     };

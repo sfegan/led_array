@@ -37,6 +37,7 @@ private:
         MIP_BLANK,
         MIP_MONO_COLOR,
         MIP_BI_COLOR,
+        MIP_WRITE_STATE,
         MIP_REBOOT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
     };
