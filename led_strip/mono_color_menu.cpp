@@ -100,7 +100,7 @@ bool MonoColorMenu::process_key_press(int key, int key_count, int& return_code,
     case 23:
         if(saved_state_manager_) {
             saved_state_manager_->save_state();
-            PopupMenu pm("State written to flash", 2, false, this, "Information");
+            PopupMenu pm("State written to flash", 2, true, this, "Information");
             pm.event_loop();
             this->redraw();
         }
