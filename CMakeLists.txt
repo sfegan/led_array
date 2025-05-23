@@ -11,17 +11,17 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(LED_ARRAY_PATH ${PROJECT_SOURCE_DIR})
 
-# Initialize the SDK
-if(PICO_BOARD STREQUAL "pico" OR PICO_BOARD STREQUAL "pico_w")
-    message(STATUS "Configuring for Pico: 2MB flash - 4KB reserved")
-    set(PICO_FLASH_SIZE_BYTES 2093056)  # 2MB - 4KB
-elseif(PICO_BOARD STREQUAL "pico2" OR PICO_BOARD STREQUAL "pico_w2")
-    message(STATUS "Configuring for Pico 2: 4MB flash - 4KB reserved")
-    set(PICO_FLASH_SIZE_BYTES 4190208)  # 4MB - 4KB
-else()
-    message(WARNING "Unknown board: defaulting to 2MB flash - 4KB reserved")
-    set(PICO_FLASH_SIZE_BYTES 2093056)
-endif()
+# # Initialize the SDK
+# if(PICO_BOARD STREQUAL "pico" OR PICO_BOARD STREQUAL "pico_w")
+#     message(STATUS "Configuring for Pico: 2MB flash - 4KB reserved")
+#     set(PICO_FLASH_SIZE_BYTES 2093056)  # 2MB - 4KB
+# elseif(PICO_BOARD STREQUAL "pico2" OR PICO_BOARD STREQUAL "pico_w2")
+#     message(STATUS "Configuring for Pico 2: 4MB flash - 4KB reserved")
+#     set(PICO_FLASH_SIZE_BYTES 4190208)  # 4MB - 4KB
+# else()
+#     message(WARNING "Unknown board: defaulting to 2MB flash - 4KB reserved")
+#     set(PICO_FLASH_SIZE_BYTES 2093056)
+# endif()
 
 pico_sdk_init()
 
