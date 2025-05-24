@@ -15,6 +15,11 @@ SavedStateSupplierConsumer::~SavedStateSupplierConsumer()
     // nothing to see here
 }
 
+// Note the last sector of the flash is erased systematically by the UF2 
+// bootloader as there is something stored there (as seen with uf2conv.py). 
+// So we use the second last sector which seems to be unused by the bootloader.
+// See RP2350-E10 erratum for more details.
+
 SavedStateManager::SavedStateManager(unsigned max_state_size_words):
     flash_target_size_(((max_state_size_words+1023)/1024)*1024*sizeof(int32_t)),
     flash_target_offset_(PICO_FLASH_SIZE_BYTES - 4096 - flash_target_size_),
