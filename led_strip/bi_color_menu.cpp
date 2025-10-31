@@ -176,8 +176,9 @@ std::vector<SimpleItemValueMenu::MenuItem> BiColorMenu::make_menu_items()
     menu_items.at(MIP_PERIOD)      = {"-/p/+   : Decrease/Set/Increase transition period in LEDs", 5, "20"};
     menu_items.at(MIP_HOLD)        = {"[/m/]   : Decrease/Set/Increase maintain length (0..127)", 3, "0"};
     menu_items.at(MIP_BALANCE)     = {"</w/>   : Decrease/Set/Increase balance (-128..128)", 4, "0"};
-    menu_items.at(MIP_SPEED)       = {"Left/Right : Decrease/Increase speed", 3, "0"};
-    menu_items.at(MIP_FLASH_PROB)  = {"Down/Up : Decrease/Increase flash probability", 3, "0"};
+    menu_items.at(MIP_SPEED)       = {"Left/Right/z : Decrease/Increase/Zero speed", 3, "0"};
+    menu_items.at(MIP_FLASH_PROB)  = {"Down/Up/0 : Decrease/Increase/Zero flash probability", 3, "0"};
+    menu_items.at(MIP_JEANNE)      = {"j       : Set pink/blue color scheme (in memory of Jeanne)", 0, ""};
     menu_items.at(MIP_WRITE_STATE) = {"Ctrl-w  : Write state to flash", 0, ""};
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
@@ -393,6 +394,30 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         printf("down_end = %d\n", down_end_);   
         printf("non_flash_prob = %d\n", non_flash_prob_);
         break;
+
+    case 'J':
+    case 'j':
+        // In memory of Jeanne Veyret
+        if(cset_ == 0) {
+            c1_.set_rgb(55, 5, 5, false);
+            c0_.set_rgb(0, 4, 6, false);
+        } else {
+            c0_.set_rgb(0, 4, 6, false);
+            c1_.set_rgb(55, 5, 5, false);
+        }
+        period_     = 30;
+        hold_       = 60;
+        balance_    = 96;
+        speed_      = 24;
+        flash_prob_ = 15;
+        set_period_value(false);
+        set_hold_value(false);
+        set_balance_value(false);
+        set_speed_value(false);
+        set_flash_prob_value(false);
+        update_calculations();
+        send_color_string();
+        break;        
 
     default:
         if(key_count==1) {
