@@ -398,24 +398,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case 'J':
     case 'j':
         // In memory of Jeanne Veyret
-        if(cset_ == 0) {
-            c1_.set_rgb(55, 5, 5, false);
-            c0_.set_rgb(0, 4, 6, false);
-        } else {
-            c0_.set_rgb(0, 4, 6, false);
-            c1_.set_rgb(55, 5, 5, false);
-        }
-        period_     = 30;
-        hold_       = 60;
-        balance_    = 96;
-        speed_      = 24;
-        flash_prob_ = 15;
-        set_period_value(false);
-        set_hold_value(false);
-        set_balance_value(false);
-        set_speed_value(false);
-        set_flash_prob_value(false);
-        update_calculations();
+        do_set_saved_state({0,4,6,55,5,5,30,60,96,24,15}, true);
         send_color_string();
         break;        
 
@@ -439,11 +422,9 @@ bool BiColorMenu::process_timer(bool controller_is_connected, int& return_code,
         heartbeat_timer_count_ = 0;
     }
 
-    if(speed_ != 0 or flash_prob_ != 0) {
-        phase_ = (phase_ + (speed_<<6)) % 65536;
-        update_calculations();
-        send_color_string(true);
-    }
+    phase_ = (phase_ + (speed_<<6)) % 65536;
+    update_calculations();
+    send_color_string(true);
 
     return true;
 }
@@ -467,26 +448,31 @@ std::vector<int32_t> BiColorMenu::get_saved_state()
 
 bool BiColorMenu::set_saved_state(const std::vector<int32_t>& state)
 {
+    return do_set_saved_state(state, false);
+}
+
+bool BiColorMenu::do_set_saved_state(const std::vector<int32_t>& state, bool redraw)
+{
     if(state.size() != 11) {
         return false;
     }
     if(cset_ == 0) {
         c1_.set_rgb(state[3], state[4], state[5], false);
-        c0_.set_rgb(state[0], state[1], state[2], false);
+        c0_.set_rgb(state[0], state[1], state[2], redraw);
     } else {
         c0_.set_rgb(state[3], state[4], state[5], false);
-        c1_.set_rgb(state[0], state[1], state[2], false);
+        c1_.set_rgb(state[0], state[1], state[2], redraw);
     }
     period_ = state[6];
     hold_ = state[7];
     balance_ = state[8];
     speed_ = state[9];
     flash_prob_ = state[10];
-    set_period_value(false);
-    set_hold_value(false);
-    set_balance_value(false);
-    set_speed_value(false);
-    set_flash_prob_value(false);
+    set_period_value(redraw);
+    set_hold_value(redraw);
+    set_balance_value(redraw);
+    set_speed_value(redraw);
+    set_flash_prob_value(redraw);
     update_calculations();
     return true;
 }

@@ -57,6 +57,8 @@ private:
     uint32_t color_code(int iled, bool debug = false);
     void send_color_string(bool flash = false);
 
+    bool do_set_saved_state(const std::vector<int32_t>& state, bool redraw);
+
     SerialPIO& pio_;
     SavedStateManager* saved_state_manager_ = nullptr;
     
