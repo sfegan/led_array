@@ -398,7 +398,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case 'J':
     case 'j':
         // In memory of Jeanne Veyret
-        do_set_saved_state({0,4,6,55,5,5,30,60,96,24,15}, true);
+        do_set_saved_state({55,5,5,0,4,6,30,60,96,24,15}, true);
         send_color_string();
         break;        
 
