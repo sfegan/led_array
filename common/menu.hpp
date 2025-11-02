@@ -173,6 +173,10 @@ public:
             if(on) { value = "<ON>"; value_style = ANSI_INVERT; }
             else { value = "OFF"; value_style = ""; }
         }
+        void set_value(const std::string& value_, const std::string& value_style_={}) {
+            value = value_;
+            value_style = value_style_;
+        }
         std::string item;
         int max_value_size;
         std::string value;
