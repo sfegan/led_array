@@ -53,6 +53,10 @@ MainMenu::~MainMenu()
 
 bool MainMenu::event_loop_starting(int& return_code)
 {
+    pio_.activate_program();
+    pio_.put_pixel(0, pio_.nled());
+    pio_.flush();
+    pio_.deactivate_program();
     if(selected_menu_ != 0) {
         PopupMenu pm("Starting selected menu, press any key to abort", 5, true, nullptr, "Auto start");
         auto pm_return = pm.event_loop();
