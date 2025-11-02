@@ -33,8 +33,8 @@ private:
         MIP_S,
         MIP_V,
         MIP_SPAWN_RATE,
-        MIP_MAX_UPDATE,
-        MIP_MIN_UPDATE,
+        MIP_MAX_TUPDATE,
+        MIP_MIN_TUPDATE,
         MIP_COLLISION,
         MIP_WRITE_STATE,
         MIP_EXIT,
@@ -44,8 +44,8 @@ private:
     std::vector<MenuItem> make_menu_items();
 
     void set_spawn_value(bool draw = true);
-    void set_max_update_value(bool draw = true);
-    void set_min_update_value(bool draw = true);
+    void set_max_tupdate_value(bool draw = true);
+    void set_min_tupdate_value(bool draw = true);
     void set_collision_value(bool draw = true);
 
     void send_color_string();
@@ -56,19 +56,21 @@ private:
     RGBHSVMenuItems c_;
 
     int spawn_rate_ = 20;
-    int max_update_ = 10;
-    int min_update_ = 10;
+    int max_tupdate_ = 10;
+    int min_tupdate_ = 10;
     bool collision_ = false;
 
     struct Spider {
-        int x;
-        int v;
-        int creation;
+        int x0;
+        int x1;
+        int xdest;
+        unsigned tupdate;
+        unsigned t0;
     };
 
     int heartbeat_timer_count_ = 0;
+    unsigned t_ = 0;
     std::vector<uint32_t> color_codes_;
-    std::vector<int> flash_value_;
     std::list<Spider> spiders_;
 
     std::minstd_rand rng_;
