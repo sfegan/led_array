@@ -26,6 +26,9 @@ BiColorMenu::BiColorMenu(SerialPIO& pio, SavedStateManager* saved_state_manager)
     timer_interval_us_ = 50000; // 20Hz
     c0_.redraw(false);
     update_calculations();
+    presets_.emplace_back("none", std::vector<int32_t>{});
+    presets_.emplace_back("Jeanne", std::vector<int32_t>{55,5,5,0,4,6,30,60,96,24,15,1});
+    presets_.emplace_back("Flashes", std::vector<int32_t>{0,0,0,0,0,0,30,0,0,0,25,2});
 }
 
 void BiColorMenu::update_calculations()
@@ -178,7 +181,7 @@ std::vector<SimpleItemValueMenu::MenuItem> BiColorMenu::make_menu_items()
     menu_items.at(MIP_BALANCE)     = {"</w/>   : Decrease/Set/Increase balance (-128..128)", 4, "0"};
     menu_items.at(MIP_SPEED)       = {"Left/Right/z : Decrease/Increase/Zero speed", 3, "0"};
     menu_items.at(MIP_FLASH_PROB)  = {"Down/Up/0 : Decrease/Increase/Zero flash probability", 3, "0"};
-    menu_items.at(MIP_JEANNE)      = {"j       : Set pink/blue color scheme (in memory of Jeanne)", 0, ""};
+    menu_items.at(MIP_PRESET)      = {"@       : Cycle through preset configurations", 8, "none"};
     menu_items.at(MIP_WRITE_STATE) = {"Ctrl-w  : Write state to flash", 0, ""};
     menu_items.at(MIP_EXIT)        = {"q       : Exit menu", 0, ""};
 
@@ -221,6 +224,20 @@ void BiColorMenu::set_flash_prob_value(bool draw)
     if(draw)draw_item_value(MIP_FLASH_PROB);
 }
 
+void BiColorMenu::set_preset_value(bool draw)
+{
+    menu_items_[MIP_PRESET].value = presets_[preset_].name;
+    if(draw)draw_item_value(MIP_PRESET);
+}
+
+void BiColorMenu::set_no_preset(bool draw)
+{
+    if(preset_) {
+        preset_ = 0;
+        set_preset_value(draw);
+    }
+}
+
 bool BiColorMenu::event_loop_starting(int& return_code)
 {
     color_codes_.resize(pio_.nled());
@@ -250,6 +267,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
 
     if(c->process_key_press(key, key_count, changed)) {
         if(changed) {
+            set_no_preset();
             send_color_string();
         }
         return true;
@@ -265,6 +283,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case '+':
         if(increase_value_in_range(period_, 2*pio_.non(), (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_period_value();
+            set_no_preset();
             update_calculations();
             send_color_string();
         }
@@ -272,6 +291,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case '-':
         if(decrease_value_in_range(period_, 2, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_period_value();
+            set_no_preset();
             update_calculations();
             send_color_string();
         }
@@ -280,6 +300,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case 'P':
         if(InplaceInputMenu::input_value_in_range(period_, 2, 2*pio_.non(), this, MIP_PERIOD, 5)) {
             update_calculations();
+            set_no_preset();
             send_color_string();
         }
         set_period_value();
@@ -288,6 +309,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case ']':
         if(increase_value_in_range(hold_, 127, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_hold_value();
+            set_no_preset();
             update_calculations();
             send_color_string();
         }
@@ -295,6 +317,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case '[':
         if(decrease_value_in_range(hold_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_hold_value();
+            set_no_preset();
             update_calculations();
             send_color_string();
         }
@@ -302,6 +325,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case 'm':
     case 'M':
         if(InplaceInputMenu::input_value_in_range(hold_, 0, 127, this, MIP_HOLD, 3)) {
+            set_no_preset();
             update_calculations();
             send_color_string();
         }
@@ -311,6 +335,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case '>':
         if(increase_value_in_range(balance_, 128, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_balance_value();
+            set_no_preset();
             update_calculations();
             send_color_string();
         }
@@ -318,6 +343,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case '<':
         if(decrease_value_in_range(balance_, -128, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_balance_value();
+            set_no_preset();
             update_calculations();
             send_color_string();
         }
@@ -325,6 +351,7 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case 'w':
     case 'W':
         if(InplaceInputMenu::input_value_in_range(balance_, -128, 128, this, MIP_BALANCE, 4)) {
+            set_no_preset();
             update_calculations();
             send_color_string();
         }
@@ -334,12 +361,14 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
     case KEY_RIGHT:
         if(increase_value_in_range(speed_, 256, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_speed_value();
+            set_no_preset();
             send_color_string();
         }
         break;
     case KEY_LEFT:
         if(decrease_value_in_range(speed_, -256, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_speed_value();
+            set_no_preset();
             send_color_string();
         }
         break;
@@ -348,24 +377,41 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         if(speed_ != 0) {
             speed_ = 0;
             set_speed_value();
+            set_no_preset();
         }
         break;
 
     case KEY_UP:
         if(increase_value_in_range(flash_prob_, 256, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_flash_prob_value();
+            set_no_preset();
         }
         break;
     case KEY_DOWN:
         if(decrease_value_in_range(flash_prob_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
             set_flash_prob_value();
+            set_no_preset();
         }
         break;
     case '0':
         if(flash_prob_ != 0) {
             flash_prob_ = 0;
+            set_no_preset();
             set_flash_prob_value();
         }
+        break;
+
+    case '@':
+        if(preset_ == 0) {
+            presets_[preset_].state = get_saved_state();
+        }
+        preset_++;
+        if(unsigned(preset_) == presets_.size()) {
+            preset_ = 0;
+        }        
+        set_preset_value();
+        do_set_saved_state(presets_[preset_].state, true);
+        send_color_string();
         break;
 
     case 23:
@@ -394,13 +440,6 @@ bool BiColorMenu::process_key_press(int key, int key_count, int& return_code,
         printf("down_end = %d\n", down_end_);   
         printf("non_flash_prob = %d\n", non_flash_prob_);
         break;
-
-    case 'J':
-    case 'j':
-        // In memory of Jeanne Veyret
-        do_set_saved_state({55,5,5,0,4,6,30,60,96,24,15}, true);
-        send_color_string();
-        break;        
 
     default:
         if(key_count==1) {
@@ -443,6 +482,7 @@ std::vector<int32_t> BiColorMenu::get_saved_state()
     state.push_back(balance_);
     state.push_back(speed_);
     state.push_back(flash_prob_);
+    state.push_back(preset_);
     return state;
 }
 
@@ -453,7 +493,7 @@ bool BiColorMenu::set_saved_state(const std::vector<int32_t>& state)
 
 bool BiColorMenu::do_set_saved_state(const std::vector<int32_t>& state, bool redraw)
 {
-    if(state.size() != 11) {
+    if(state.size() != 12) {
         return false;
     }
     if(cset_ == 0) {
@@ -468,11 +508,13 @@ bool BiColorMenu::do_set_saved_state(const std::vector<int32_t>& state, bool red
     balance_ = state[8];
     speed_ = state[9];
     flash_prob_ = state[10];
+    preset_ = state[11];
     set_period_value(redraw);
     set_hold_value(redraw);
     set_balance_value(redraw);
     set_speed_value(redraw);
     set_flash_prob_value(redraw);
+    set_preset_value(redraw);
     update_calculations();
     return true;
 }

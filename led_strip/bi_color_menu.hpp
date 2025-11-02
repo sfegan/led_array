@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 #include <random>
 
@@ -38,7 +39,7 @@ private:
         MIP_BALANCE,
         MIP_SPEED,
         MIP_FLASH_PROB,
-        MIP_JEANNE,
+        MIP_PRESET,
         MIP_WRITE_STATE,
         MIP_EXIT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
@@ -52,7 +53,10 @@ private:
     void set_balance_value(bool draw = true);
     void set_speed_value(bool draw = true);
     void set_flash_prob_value(bool draw = true);
+    void set_preset_value(bool draw = true);
     
+    void set_no_preset(bool draw = true);
+
     void generate_random_flashes();
     uint32_t color_code(int iled, bool debug = false);
     void send_color_string(bool flash = false);
@@ -72,10 +76,19 @@ private:
     int speed_ = 0;
     int phase_ = 0;
     int flash_prob_ = 0;
+    int preset_ = 0;
 
     int heartbeat_timer_count_ = 0;
     std::vector<uint32_t> color_codes_;
     std::vector<int> flash_value_;
+
+    struct Preset {
+        Preset(const std::string& n, const std::vector<int32_t>& s): name(n), state(s) {}
+        std::string name;
+        std::vector<int32_t> state;
+    };
+
+    std::vector<Preset> presets_;
 
     // All calculations in integer math, using 0..65535 for fractions
     static constexpr int FRAC_BITS = 16;
