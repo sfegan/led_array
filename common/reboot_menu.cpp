@@ -46,6 +46,7 @@ bool RebootMenu::process_key_press(int key, int key_count, int& return_code,
         for(int i=0;i<dots_;++i)putchar_raw('X');
         for(int i=dots_;i<10;++i)putchar_raw('_');
         if(dots_ >= 10) {
+            base_menu_->event_loop_finishing(return_code); // Allow base menu to clean up
             watchdog_enable(1,false);
             while(1);
         }
