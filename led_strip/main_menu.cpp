@@ -20,9 +20,10 @@ namespace {
 
 std::vector<SimpleItemValueMenu::MenuItem> MainMenu::make_menu_items() {
     std::vector<SimpleItemValueMenu::MenuItem> menu_items(MIP_NUM_ITEMS);
-    menu_items.at(MIP_PIO)         = {"S       : Setup WS2812 device", 0, ""};
+    menu_items.at(MIP_PIO)         = {"C       : Configure WS2812 device", 0, ""};
     menu_items.at(MIP_MONO_COLOR)  = {"m       : Mono-color menu", 0, ""};
     menu_items.at(MIP_BI_COLOR)    = {"b       : Bi-color menu", 0, ""};
+    menu_items.at(MIP_SPIDER_RUN)  = {"s       : Spider-run menu", 0, ""};
     menu_items.at(MIP_WRITE_STATE) = {"Ctrl-w  : Write state to flash", 0, ""};
     menu_items.at(MIP_REBOOT)      = {"Ctrl-b  : Reboot flasher (press and hold)", 0, ""};
     return menu_items;
@@ -32,13 +33,15 @@ MainMenu::MainMenu():
     SimpleItemValueMenu(make_menu_items(), std::string("WS2812 pattern generator (Build ")+BuildDate::latest_build_date+")"), 
     pio_(WS2812_DEFAULT_PIN, WS2812_DEFAULT_BAUDRATE),
     mono_color_menu_(pio_, this),
-    bi_color_menu_(pio_, this)
+    bi_color_menu_(pio_, this),
+    spider_run_menu_(pio_, this)
 {
     timer_interval_us_ = 1000000; // 1Hz
     add_saved_state_supplier(this);
     add_saved_state_supplier(&pio_);
     add_saved_state_supplier(&mono_color_menu_);
     add_saved_state_supplier(&bi_color_menu_);
+    add_saved_state_supplier(&spider_run_menu_);
 
     load_state();
 }
@@ -70,7 +73,7 @@ bool MainMenu::process_menu_item(int key)
     selected_menu_ = key;
 
     switch(key) {
-    case 'S':
+    case 'C':
         pio_.event_loop();
         break;
         
@@ -80,6 +83,10 @@ bool MainMenu::process_menu_item(int key)
 
     case 'b': 
         bi_color_menu_.event_loop();
+        break;
+
+    case 's': 
+        spider_run_menu_.event_loop();
         break;
 
     default:

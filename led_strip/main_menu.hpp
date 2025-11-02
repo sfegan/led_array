@@ -8,6 +8,7 @@
 
 #include "mono_color_menu.hpp"
 #include "bi_color_menu.hpp"
+#include "spider_run_menu.hpp"
 
 class MainMenu: public SimpleItemValueMenu,
                 public SavedStateSupplierConsumer,
@@ -37,6 +38,7 @@ private:
         MIP_BLANK,
         MIP_MONO_COLOR,
         MIP_BI_COLOR,
+        MIP_SPIDER_RUN,
         MIP_WRITE_STATE,
         MIP_REBOOT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
@@ -49,6 +51,7 @@ private:
     SerialPIOMenu pio_;
     MonoColorMenu mono_color_menu_;
     BiColorMenu bi_color_menu_;
+    SpiderRunMenu spider_run_menu_;
 
     int32_t selected_menu_ = 0;
 };

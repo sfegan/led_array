@@ -4,7 +4,9 @@ add_executable(led_strip)
 
 target_sources(led_strip PRIVATE main.cpp 
         main_menu.cpp
-        mono_color_menu.cpp bi_color_menu.cpp)
+        mono_color_menu.cpp 
+        bi_color_menu.cpp
+        spider_run_menu.cpp)
 
 # pull in common dependencies
 target_link_libraries(led_strip PRIVATE
