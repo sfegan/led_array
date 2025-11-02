@@ -68,7 +68,7 @@ std::vector<SimpleItemValueMenu::MenuItem> SpiderRunMenu::make_menu_items()
     return menu_items;
 }
 
-void SpiderRunMenu::set_spawn_value(bool draw)
+void SpiderRunMenu::set_spawn_rate_value(bool draw)
 {
     menu_items_[MIP_SPAWN_RATE].value = std::to_string(spawn_rate_);
     if(draw)draw_item_value(MIP_SPAWN_RATE);
@@ -122,17 +122,17 @@ bool SpiderRunMenu::process_key_press(int key, int key_count, int& return_code,
     switch(key) {
     case '>':
         if(increase_value_in_range(spawn_rate_, 255, (key_count >= 15 ? 5 : 1), key_count==1)) {
-            set_spawn_value();
+            set_spawn_rate_value();
         }
         break;
     case '<':
         if(decrease_value_in_range(spawn_rate_, 0, (key_count >= 15 ? 5 : 1), key_count==1)) {
-            set_spawn_value();
+            set_spawn_rate_value();
         }
         break;
     case '^':
         InplaceInputMenu::input_value_in_range(spawn_rate_, 0, 255, this, MIP_SPAWN_RATE, 3);
-        set_spawn_value();
+        set_spawn_rate_value();
         break;
 
     case '}':
@@ -271,6 +271,10 @@ bool SpiderRunMenu::set_saved_state(const std::vector<int32_t>& state)
     max_tupdate_ = state[4];
     min_tupdate_ = state[5];
     collision_ = state[6];
+    set_spawn_rate_value(false);
+    set_max_tupdate_value(false);
+    set_min_tupdate_value(false);
+    set_collision_value(false);
     return true;
 }
 

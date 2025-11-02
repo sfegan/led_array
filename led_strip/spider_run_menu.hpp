@@ -43,7 +43,7 @@ private:
 
     std::vector<MenuItem> make_menu_items();
 
-    void set_spawn_value(bool draw = true);
+    void set_spawn_rate_value(bool draw = true);
     void set_max_tupdate_value(bool draw = true);
     void set_min_tupdate_value(bool draw = true);
     void set_collision_value(bool draw = true);
