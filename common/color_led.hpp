@@ -161,6 +161,7 @@ private:
         MIP_NON,
         MIP_BACK,
         MIP_LAMP_TEST,
+        MIP_FRAME_RATE,
         MIP_EXIT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
     };
@@ -175,6 +176,7 @@ private:
     void set_non_value(bool draw = true);
     void set_back_value(bool draw = true);
     void set_lamp_test_value(bool draw = true);
+    void set_frame_rate_value(bool draw = true);
     
     std::vector<MenuItem> make_menu_items();
 

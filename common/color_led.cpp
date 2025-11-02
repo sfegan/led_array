@@ -439,29 +439,43 @@ void SerialPIOMenu::set_baudrate_value(bool draw)
 {
     menu_items_[MIP_BAUDRATE].value = std::to_string(baudrate_);
     if(draw)draw_item_value(MIP_BAUDRATE);
+    set_frame_rate_value(draw);
 }
 
 void SerialPIOMenu::set_nled_value(bool draw)
 {
     menu_items_[MIP_NLED].value = std::to_string(nled_);
     if(draw)draw_item_value(MIP_NLED);
+    set_frame_rate_value(draw);
 }
 
 void SerialPIOMenu::set_non_value(bool draw)
 {
     menu_items_[MIP_NON].value = std::to_string(non_);
     if(draw)draw_item_value(MIP_NON);
+    set_frame_rate_value(draw);
 }
 
 void SerialPIOMenu::set_back_value(bool draw)
 {
     menu_items_[MIP_BACK].value = back_ ? "BACK" : "FRONT";
     if(draw)draw_item_value(MIP_BACK);
+    set_frame_rate_value(draw);
+}
+
+void SerialPIOMenu::set_frame_rate_value(bool draw)
+{
+    unsigned npix = back_ ? nled_ : non_;
+    float frame_rate = baudrate_ / (float)(npix * 24);
+    char buf[16];
+    std::snprintf(buf, sizeof(buf), "%.1f", frame_rate);
+    menu_items_[MIP_FRAME_RATE].value = std::string(buf);
+    if(draw)draw_item_value(MIP_FRAME_RATE);
 }
 
 void SerialPIOMenu::set_lamp_test_value(bool draw)
 {
-    menu_items_[MIP_LAMP_TEST].value = (lamp_test_cycle_>=0) ? "<ON>" : "OFF";
+    menu_items_[MIP_LAMP_TEST].set_onoff(lamp_test_cycle_>=0);
     if(draw)draw_item_value(MIP_LAMP_TEST);
 }
 
@@ -469,11 +483,12 @@ std::vector<SerialPIOMenu::MenuItem> SerialPIOMenu::make_menu_items()
 {
     std::vector<MenuItem> menu_items(MIP_NUM_ITEMS);
     menu_items.at(MIP_PIN)         = {"P       : Set GPIO pin", 2, "0"};
-    menu_items.at(MIP_BAUDRATE)    = {"B       : Set baud rate", 8, "0"};
-    menu_items.at(MIP_NLED)        = {"+/N/-   : Decrease/Set/Increase number of LEDs", 4, "0"};
+    menu_items.at(MIP_BAUDRATE)    = {"B       : Set baud rate [bits/sec]", 8, "0"};
+    menu_items.at(MIP_NLED)        = {"-/N/+   : Decrease/Set/Increase number of LEDs", 4, "0"};
     menu_items.at(MIP_NON)         = {"</n/>   : Decrease/Set/Increase number of active LEDs", 4, "0"};
     menu_items.at(MIP_BACK)        = {"f       : Set front/back", 5, "FRONT"};
-    menu_items.at(MIP_LAMP_TEST)   = {"l       : Lamp test", 4, ""};
+    menu_items.at(MIP_LAMP_TEST)   = {"l       : Lamp test", 4, "OFF"};
+    menu_items.at(MIP_FRAME_RATE)  = {"        : Maximum frame refresh rate [Hz]", 8, "0"};
     menu_items.at(MIP_EXIT)        = {"q       : Quit", 0, ""};
     return menu_items;
 }
