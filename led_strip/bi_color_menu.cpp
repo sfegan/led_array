@@ -500,8 +500,8 @@ bool BiColorMenu::do_set_saved_state(const std::vector<int32_t>& state, bool red
         c1_.set_rgb(state[3], state[4], state[5], false);
         c0_.set_rgb(state[0], state[1], state[2], redraw);
     } else {
-        c0_.set_rgb(state[3], state[4], state[5], false);
-        c1_.set_rgb(state[0], state[1], state[2], redraw);
+        c0_.set_rgb(state[0], state[1], state[2], false);
+        c1_.set_rgb(state[3], state[4], state[5], redraw);
     }
     period_ = state[6];
     hold_ = state[7];
