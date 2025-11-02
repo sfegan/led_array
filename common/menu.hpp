@@ -169,6 +169,10 @@ public:
     struct MenuItem {
         MenuItem(): item(), max_value_size(), value(), value_style() {}
         MenuItem(const std::string& item_, int max_value_size_, const std::string& value_={});
+        void set_onoff(bool on) {
+            if(on) { value = "<ON>"; value_style = ANSI_INVERT; }
+            else { value = "OFF"; value_style = ""; }
+        }
         std::string item;
         int max_value_size;
         std::string value;
