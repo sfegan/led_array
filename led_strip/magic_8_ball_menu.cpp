@@ -142,17 +142,23 @@ void Magic8BallMenu::set_state_value(bool draw)
 
 void Magic8BallMenu::configure_trigger_pin()
 {
-    const uint pin = pio_.trigger_pin();
-    gpio_set_irq_enabled(pin, GPIO_IRQ_EDGE_FALL, false);
-    gpio_init(pin);
-    gpio_set_dir(pin, GPIO_IN);
-    gpio_pull_up(pin);
-    gpio_set_irq_enabled_with_callback(pin, GPIO_IRQ_EDGE_FALL, true, &Magic8BallMenu::gpio_callback);
+    const auto configure = [](int pin) {
+        if(pin < 0) return;
+        gpio_set_irq_enabled(pin, GPIO_IRQ_EDGE_FALL, false);
+        gpio_init(pin);
+        gpio_set_dir(pin, GPIO_IN);
+        gpio_pull_up(pin);
+        gpio_set_irq_enabled_with_callback(pin, GPIO_IRQ_EDGE_FALL, true, &Magic8BallMenu::gpio_callback);
+    };
+    configure(pio_.trigger_line_1());
+    if(pio_.trigger_line_2() != pio_.trigger_line_1()) configure(pio_.trigger_line_2());
 }
 
 void Magic8BallMenu::gpio_callback(uint gpio, uint32_t events)
 {
-    if(active_menu_ && gpio == unsigned(active_menu_->pio_.trigger_pin()) && (events & GPIO_IRQ_EDGE_FALL)) {
+    if(active_menu_ && (gpio == unsigned(active_menu_->pio_.trigger_line_1()) ||
+        (active_menu_->pio_.trigger_line_2() >= 0 && gpio == unsigned(active_menu_->pio_.trigger_line_2()))) &&
+        (events & GPIO_IRQ_EDGE_FALL)) {
         const uint64_t now = time_us_64();
         if(now - active_menu_->last_trigger_us_ >= 100000) { // switch debounce
             active_menu_->last_trigger_us_ = now;
@@ -237,7 +243,9 @@ bool Magic8BallMenu::event_loop_starting(int&)
 
 void Magic8BallMenu::event_loop_finishing(int&)
 {
-    gpio_set_irq_enabled(pio_.trigger_pin(), GPIO_IRQ_EDGE_FALL, false);
+    gpio_set_irq_enabled(pio_.trigger_line_1(), GPIO_IRQ_EDGE_FALL, false);
+    if(pio_.trigger_line_2() >= 0 && pio_.trigger_line_2() != pio_.trigger_line_1())
+        gpio_set_irq_enabled(pio_.trigger_line_2(), GPIO_IRQ_EDGE_FALL, false);
     active_menu_ = nullptr;
     pio_.put_pixel(0, pio_.nled());
     pio_.flush();

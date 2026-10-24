@@ -24,11 +24,12 @@ void LEDPanel::clear(uint32_t color)
 int LEDPanel::pixel_index(int x, int y) const
 {
     // Count rows and columns from the selected physical LED-0 corner, then
-    // apply the presently supported horizontal serpentine layout.  In every
-    // corner setting the logical pixel at that corner maps to serial LED 0.
+    // apply the presently supported vertical (column-major) serpentine layout.
+    // In every corner setting the logical pixel at that corner maps to serial
+    // LED 0: LED 0 is column 0 / row 0, LED 1 is column 0 / row 1, etc.
     const int row_from_start = (corner_ == Corner::BottomLeft || corner_ == Corner::BottomRight) ? height_ - 1 - y : y;
     const int col_from_start = (corner_ == Corner::TopRight || corner_ == Corner::BottomRight) ? width_ - 1 - x : x;
-    return row_from_start * width_ + ((row_from_start & 1) ? width_ - 1 - col_from_start : col_from_start);
+    return col_from_start * height_ + ((col_from_start & 1) ? height_ - 1 - row_from_start : row_from_start);
 }
 
 void LEDPanel::set_pixel(int x, int y, uint32_t color)
