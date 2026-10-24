@@ -42,7 +42,7 @@ void LEDPanel::fill_rect(int x, int y, int width, int height, uint32_t color)
         for(int ix = x; ix < x + width; ++ix) set_pixel(ix, iy, color);
 }
 
-void LEDPanel::draw_text(const std::string& text, int x, uint32_t color)
+void LEDPanel::draw_text(const std::string& text, int x, uint32_t color, int character_spacing)
 {
     for(unsigned ichar = 0; ichar < text.size(); ++ichar) {
         const unsigned char c = static_cast<unsigned char>(text[ichar]);
@@ -50,7 +50,7 @@ void LEDPanel::draw_text(const std::string& text, int x, uint32_t color)
         for(int y = 0; y < 8 && y < height_; ++y) {
             const unsigned char bits = static_cast<unsigned char>(font8x8_basic[c][y]);
             for(int bit = 0; bit < 8; ++bit)
-                if(bits & (1u << bit)) set_pixel(x + int(ichar) * 9 + bit, y, color);
+                if(bits & (1u << bit)) set_pixel(x + int(ichar) * (8 + character_spacing) + bit, y, color);
         }
     }
 }

@@ -25,7 +25,7 @@ public:
 private:
     enum MenuItemPositions { MIP_COLOR, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V,
         MIP_TRIGGER_PIN, MIP_THINK_TIME, MIP_SCROLL_SPEED, MIP_CORNER,
-        MIP_CURSOR, MIP_CURSOR_ROWS, MIP_TRIGGER_NOW, MIP_STATE, MIP_WRITE_STATE, MIP_EXIT, MIP_NUM_ITEMS };
+        MIP_CURSOR, MIP_CURSOR_ROWS, MIP_PROMPT, MIP_TRIGGER_NOW, MIP_STATE, MIP_WRITE_STATE, MIP_EXIT, MIP_NUM_ITEMS };
     enum class State { Idle, Thinking, Scrolling };
     enum ColorSet { ShimmerA, ShimmerB, Positive, Uncertain, Negative, Cursor, ColorSetCount };
 
@@ -39,6 +39,7 @@ private:
     void set_color_set(bool draw = true);
     void set_state_value(bool draw = true);
     std::string state_value() const;
+    int max_prompt_length() const;
     uint32_t color(ColorSet set) const;
     const char* color_set_name() const;
     const char* corner_name() const;
@@ -55,6 +56,7 @@ private:
     int scroll_period_ms_ = 50;
     int cursor_rows_ = 8;
     bool cursor_enabled_ = true;
+    std::string prompt_;
     int think_ticks_ = 0;
     int forced_response_ = 0; // 0 random, 1 positive, 2 negative
     int scroll_x_ = 0;

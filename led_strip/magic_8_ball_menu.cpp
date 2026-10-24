@@ -54,6 +54,7 @@ std::vector<SimpleItemValueMenu::MenuItem> Magic8BallMenu::make_menu_items()
     items[MIP_CORNER] = {"o       : LED-0 panel corner (serpentine)", 12, "TOP LEFT"};
     items[MIP_CURSOR] = {"i       : Idle cursor", 4, "<ON>"};
     items[MIP_CURSOR_ROWS] = {"k       : Idle cursor height [rows]", 1, "8"};
+    items[MIP_PROMPT] = {"p       : Set idle prompt", 4, ""};
     items[MIP_TRIGGER_NOW] = {"Space   : Trigger Magic 8-ball", 0, ""};
     // Refined at mode start once the active LED count establishes the panel width.
     items[MIP_STATE] = {"        : Current state", 10, "IDLE"};
@@ -100,9 +101,15 @@ void Magic8BallMenu::set_values(bool draw)
     menu_items_[MIP_CORNER].value = corner_name();
     menu_items_[MIP_CURSOR].set_onoff(cursor_enabled_);
     menu_items_[MIP_CURSOR_ROWS].value = std::to_string(cursor_rows_);
+    menu_items_[MIP_PROMPT].value = prompt_;
     set_state_value(false);
-    if(draw) for(int i = MIP_TRIGGER_PIN; i <= MIP_CURSOR_ROWS; ++i) draw_item_value(i);
+    if(draw) for(int i = MIP_TRIGGER_PIN; i <= MIP_PROMPT; ++i) draw_item_value(i);
     if(draw) draw_item_value(MIP_STATE);
+}
+
+int Magic8BallMenu::max_prompt_length() const
+{
+    return panel_.width() / 8;
 }
 
 std::string Magic8BallMenu::state_value() const
@@ -182,8 +189,11 @@ void Magic8BallMenu::send_panel()
 {
     panel_.clear();
     if(state_ == State::Idle) {
-        if(cursor_enabled_ && ((frame_ / 50) & 1) == 0)
-            panel_.fill_rect(0, panel_.height() - cursor_rows_, 8, cursor_rows_, color(Cursor));
+        panel_.draw_text(prompt_, 0, color(Cursor), 0);
+        if(cursor_enabled_ && ((frame_ / 50) & 1) == 0) {
+            const int cursor_cell = std::min(int(prompt_.size()), max_prompt_length() - 1);
+            panel_.fill_rect(cursor_cell * 8, panel_.height() - cursor_rows_, 8, cursor_rows_, color(Cursor));
+        }
     } else if(state_ == State::Thinking) {
         // A low-current, deterministic shimmer: each pixel alternates between
         // the two configurable colours, with a diagonally moving phase.
@@ -209,9 +219,11 @@ bool Magic8BallMenu::event_loop_starting(int&)
     // Text is always eight pixels high.  Active LEDs therefore determine the
     // number of horizontal columns: 256 = 32x8, 512 = 64x8, and so on.
     if(pio_.non() >= 8 && pio_.non() % 8 == 0) panel_.resize(pio_.non() / 8, 8);
+    if(int(prompt_.size()) > max_prompt_length()) prompt_.resize(max_prompt_length());
     // A visible glyph consumes nine columns (eight pixels plus its gap).
     // Quotes take two more characters; retain space for the status words too.
     menu_items_[MIP_STATE].max_value_size = std::max(10, (panel_.width() + 8) / 9 + 2);
+    menu_items_[MIP_PROMPT].max_value_size = max_prompt_length();
     active_menu_ = this;
     configure_trigger_pin();
     pio_.activate_program();
@@ -248,6 +260,17 @@ bool Magic8BallMenu::process_key_press(int key, int key_count, int& return_code,
     case 'o': panel_.set_corner(LEDPanel::Corner((int(panel_.corner()) + 1) % 4)); menu_items_[MIP_CORNER].value = corner_name(); draw_item_value(MIP_CORNER); send_panel(); break;
     case 'i': cursor_enabled_ = !cursor_enabled_; menu_items_[MIP_CURSOR].set_onoff(cursor_enabled_); draw_item_value(MIP_CURSOR); send_panel(); break;
     case 'k': InplaceInputMenu::input_value_in_range(cursor_rows_, 1, 8, this, MIP_CURSOR_ROWS, 1); menu_items_[MIP_CURSOR_ROWS].value = std::to_string(cursor_rows_); draw_item_value(MIP_CURSOR_ROWS); send_panel(); break;
+    case 'p': {
+        InputMenu input(max_prompt_length(), VI_STRING, "Idle prompt", "Prompt: ", this);
+        input.set_value(prompt_);
+        if(input.event_loop() == 1) {
+            prompt_ = input.get_value();
+            menu_items_[MIP_PROMPT].value = prompt_;
+            draw_item_value(MIP_PROMPT);
+            send_panel();
+        }
+        break;
+    }
     case 23: if(saved_state_manager_) { saved_state_manager_->save_state(); PopupMenu pm("State written to flash", 2, true, this, "Information"); pm.event_loop(); redraw(); } break;
     case 'q': case 'Q': return_code = 0; return false;
     default: if(key_count == 1) beep(); break;
@@ -272,18 +295,24 @@ std::vector<int32_t> Magic8BallMenu::get_saved_state()
 {
     std::vector<int32_t> state = {trigger_pin_, think_time_tenths_, scroll_period_ms_, int(panel_.corner()), cursor_enabled_, cursor_rows_, int(color_set_)};
     for(auto& c : colors_) { state.push_back(c.r()); state.push_back(c.g()); state.push_back(c.b()); }
+    state.push_back(prompt_.size());
+    for(char c : prompt_) state.push_back(static_cast<unsigned char>(c));
     return state;
 }
 
 bool Magic8BallMenu::set_saved_state(const std::vector<int32_t>& state)
 {
-    if(state.size() != 25) return false;
+    if(state.size() < 26) return false;
     trigger_pin_ = state[0]; think_time_tenths_ = state[1]; scroll_period_ms_ = state[2];
     panel_.set_corner(LEDPanel::Corner(state[3])); cursor_enabled_ = state[4]; cursor_rows_ = state[5]; color_set_ = ColorSet(state[6]);
     for(int i = 0; i < ColorSetCount; ++i) colors_[i].set_rgb(state[7 + i * 3], state[8 + i * 3], state[9 + i * 3], false);
+    const int prompt_size = state[25];
+    if(prompt_size < 0 || state.size() != unsigned(26 + prompt_size)) return false;
+    prompt_.clear();
+    for(int i = 0; i < prompt_size; ++i) prompt_.push_back(static_cast<char>(state[26 + i]));
     set_values(false);
     return true;
 }
 
-int32_t Magic8BallMenu::get_version() { return 0; }
+int32_t Magic8BallMenu::get_version() { return 1; }
 int32_t Magic8BallMenu::get_supplier_id() { return 0x4d38424c; } // "M8BL"

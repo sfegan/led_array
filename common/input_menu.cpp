@@ -40,6 +40,11 @@ InplaceInputMenu::~InplaceInputMenu()
     // nothing to see here
 }
 
+void InplaceInputMenu::set_value(const std::string& value)
+{
+    value_ = value.substr(0, max_value_size_);
+}
+
 bool InplaceInputMenu::process_key_press(int key, int key_count, int& return_code,
     const std::vector<std::string>& escape_sequence_parameters,
     absolute_time_t& next_timer)
@@ -315,6 +320,11 @@ void InputMenu::redraw()
 const std::string& InputMenu::get_value() const
 {
     return iim_.get_value();
+}
+
+void InputMenu::set_value(const std::string& value)
+{
+    iim_.set_value(value);
 }
 
 void InputMenu::cancelled()

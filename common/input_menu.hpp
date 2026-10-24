@@ -20,6 +20,7 @@ public:
     bool process_timer(bool controller_is_connected, int& return_code,
         absolute_time_t& next_timer) override;
     const std::string& get_value() const { return value_; }
+    void set_value(const std::string& value);
     void cancelled();
 
     static bool input_value_in_range(int& value, int value_min, int value_max,
@@ -61,6 +62,7 @@ public:
     bool process_timer(bool controller_is_connected, int& return_code,
         absolute_time_t& next_timer) override;
     const std::string& get_value() const;
+    void set_value(const std::string& value);
     void cancelled();
     int row() override;
     int col() override;
