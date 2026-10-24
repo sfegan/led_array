@@ -6,7 +6,8 @@ target_sources(led_strip PRIVATE main.cpp
         main_menu.cpp
         mono_color_menu.cpp 
         bi_color_menu.cpp
-        spider_run_menu.cpp)
+        spider_run_menu.cpp
+        magic_8_ball_menu.cpp)
 
 # pull in common dependencies
 target_link_libraries(led_strip PRIVATE
@@ -21,4 +22,3 @@ led_array_auto_set_url(led_strip)
 
 pico_enable_stdio_usb(led_strip 1)
 pico_enable_stdio_uart(led_strip 0)
-
