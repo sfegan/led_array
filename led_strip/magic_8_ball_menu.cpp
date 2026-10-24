@@ -48,7 +48,6 @@ std::vector<SimpleItemValueMenu::MenuItem> Magic8BallMenu::make_menu_items()
     std::vector<MenuItem> items(MIP_NUM_ITEMS);
     items[MIP_COLOR] = {"c       : Select editable colour", 10, "SHIMMER A"};
     RGBHSVMenuItems::make_menu_items(items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
-    items[MIP_TRIGGER_PIN] = {"t       : Trigger GPIO (pull-up, falling edge)", 2, "22"};
     items[MIP_THINK_TIME] = {"T       : Thinking time [tenths of sec]", 3, "30"};
     items[MIP_SCROLL_SPEED] = {"x       : Pixel scroll period [ms]", 3, "50"};
     items[MIP_CORNER] = {"o       : LED-0 panel corner (serpentine)", 12, "TOP LEFT"};
@@ -95,7 +94,6 @@ void Magic8BallMenu::set_color_set(bool draw)
 void Magic8BallMenu::set_values(bool draw)
 {
     set_color_set(draw);
-    menu_items_[MIP_TRIGGER_PIN].value = std::to_string(trigger_pin_);
     menu_items_[MIP_THINK_TIME].value = std::to_string(think_time_tenths_);
     menu_items_[MIP_SCROLL_SPEED].value = std::to_string(scroll_period_ms_);
     menu_items_[MIP_CORNER].value = corner_name();
@@ -103,7 +101,7 @@ void Magic8BallMenu::set_values(bool draw)
     menu_items_[MIP_CURSOR_ROWS].value = std::to_string(cursor_rows_);
     menu_items_[MIP_PROMPT].value = prompt_;
     set_state_value(false);
-    if(draw) for(int i = MIP_TRIGGER_PIN; i <= MIP_PROMPT; ++i) draw_item_value(i);
+    if(draw) for(int i = MIP_THINK_TIME; i <= MIP_PROMPT; ++i) draw_item_value(i);
     if(draw) draw_item_value(MIP_STATE);
 }
 
@@ -115,7 +113,11 @@ int Magic8BallMenu::max_prompt_length() const
 std::string Magic8BallMenu::state_value() const
 {
     if(state_ == State::Idle) return "IDLE";
-    if(state_ == State::Thinking) return "THINKING";
+    if(state_ == State::Thinking) {
+        if(forced_response_ == 1) return "THINKING+";
+        if(forced_response_ == 2) return "THINKING-";
+        return "THINKING";
+    }
 
     const std::string text = answers[response_index_].text;
     // Report the text currently crossing the window, rather than just a
@@ -140,16 +142,17 @@ void Magic8BallMenu::set_state_value(bool draw)
 
 void Magic8BallMenu::configure_trigger_pin()
 {
-    gpio_set_irq_enabled(trigger_pin_, GPIO_IRQ_EDGE_FALL, false);
-    gpio_init(trigger_pin_);
-    gpio_set_dir(trigger_pin_, GPIO_IN);
-    gpio_pull_up(trigger_pin_);
-    gpio_set_irq_enabled_with_callback(trigger_pin_, GPIO_IRQ_EDGE_FALL, true, &Magic8BallMenu::gpio_callback);
+    const uint pin = pio_.trigger_pin();
+    gpio_set_irq_enabled(pin, GPIO_IRQ_EDGE_FALL, false);
+    gpio_init(pin);
+    gpio_set_dir(pin, GPIO_IN);
+    gpio_pull_up(pin);
+    gpio_set_irq_enabled_with_callback(pin, GPIO_IRQ_EDGE_FALL, true, &Magic8BallMenu::gpio_callback);
 }
 
 void Magic8BallMenu::gpio_callback(uint gpio, uint32_t events)
 {
-    if(active_menu_ && gpio == unsigned(active_menu_->trigger_pin_) && (events & GPIO_IRQ_EDGE_FALL)) {
+    if(active_menu_ && gpio == unsigned(active_menu_->pio_.trigger_pin()) && (events & GPIO_IRQ_EDGE_FALL)) {
         const uint64_t now = time_us_64();
         if(now - active_menu_->last_trigger_us_ >= 100000) { // switch debounce
             active_menu_->last_trigger_us_ = now;
@@ -234,7 +237,7 @@ bool Magic8BallMenu::event_loop_starting(int&)
 
 void Magic8BallMenu::event_loop_finishing(int&)
 {
-    gpio_set_irq_enabled(trigger_pin_, GPIO_IRQ_EDGE_FALL, false);
+    gpio_set_irq_enabled(pio_.trigger_pin(), GPIO_IRQ_EDGE_FALL, false);
     active_menu_ = nullptr;
     pio_.put_pixel(0, pio_.nled());
     pio_.flush();
@@ -252,23 +255,24 @@ bool Magic8BallMenu::process_key_press(int key, int key_count, int& return_code,
     switch(key) {
     case ' ': handle_trigger(); break;
     case 'c': color_set_ = ColorSet((color_set_ + 1) % ColorSetCount); set_color_set(); break;
-    case 't': gpio_set_irq_enabled(trigger_pin_, GPIO_IRQ_EDGE_FALL, false);
-        InplaceInputMenu::input_value_in_range(trigger_pin_, 0, 29, this, MIP_TRIGGER_PIN, 2);
-        configure_trigger_pin(); menu_items_[MIP_TRIGGER_PIN].value = std::to_string(trigger_pin_); draw_item_value(MIP_TRIGGER_PIN); break;
     case 'T': InplaceInputMenu::input_value_in_range(think_time_tenths_, 1, 255, this, MIP_THINK_TIME, 3); menu_items_[MIP_THINK_TIME].value = std::to_string(think_time_tenths_); draw_item_value(MIP_THINK_TIME); break;
     case 'x': InplaceInputMenu::input_value_in_range(scroll_period_ms_, 10, 255, this, MIP_SCROLL_SPEED, 3); menu_items_[MIP_SCROLL_SPEED].value = std::to_string(scroll_period_ms_); draw_item_value(MIP_SCROLL_SPEED); break;
     case 'o': panel_.set_corner(LEDPanel::Corner((int(panel_.corner()) + 1) % 4)); menu_items_[MIP_CORNER].value = corner_name(); draw_item_value(MIP_CORNER); send_panel(); break;
     case 'i': cursor_enabled_ = !cursor_enabled_; menu_items_[MIP_CURSOR].set_onoff(cursor_enabled_); draw_item_value(MIP_CURSOR); send_panel(); break;
     case 'k': InplaceInputMenu::input_value_in_range(cursor_rows_, 1, 8, this, MIP_CURSOR_ROWS, 1); menu_items_[MIP_CURSOR_ROWS].value = std::to_string(cursor_rows_); draw_item_value(MIP_CURSOR_ROWS); send_panel(); break;
     case 'p': {
-        InputMenu input(max_prompt_length(), VI_STRING, "Idle prompt", "Prompt: ", this);
+        // Keep editing in the menu's value field, so there is no separate
+        // dialog to clean up and the prompt remains visible as it is typed.
+        SimpleItemValueRowAndColumnGetter rc_getter(this, MIP_PROMPT);
+        InplaceInputMenu input(rc_getter, max_prompt_length(), VI_STRING, true, this);
         input.set_value(prompt_);
         if(input.event_loop() == 1) {
             prompt_ = input.get_value();
             menu_items_[MIP_PROMPT].value = prompt_;
-            draw_item_value(MIP_PROMPT);
             send_panel();
         }
+        // Replace the in-place cursor/underscore rendering with a clean menu.
+        redraw();
         break;
     }
     case 23: if(saved_state_manager_) { saved_state_manager_->save_state(); PopupMenu pm("State written to flash", 2, true, this, "Information"); pm.event_loop(); redraw(); } break;
@@ -293,7 +297,7 @@ bool Magic8BallMenu::process_timer(bool controller_is_connected, int&, absolute_
 
 std::vector<int32_t> Magic8BallMenu::get_saved_state()
 {
-    std::vector<int32_t> state = {trigger_pin_, think_time_tenths_, scroll_period_ms_, int(panel_.corner()), cursor_enabled_, cursor_rows_, int(color_set_)};
+    std::vector<int32_t> state = {think_time_tenths_, scroll_period_ms_, int(panel_.corner()), cursor_enabled_, cursor_rows_, int(color_set_)};
     for(auto& c : colors_) { state.push_back(c.r()); state.push_back(c.g()); state.push_back(c.b()); }
     state.push_back(prompt_.size());
     for(char c : prompt_) state.push_back(static_cast<unsigned char>(c));
@@ -302,17 +306,17 @@ std::vector<int32_t> Magic8BallMenu::get_saved_state()
 
 bool Magic8BallMenu::set_saved_state(const std::vector<int32_t>& state)
 {
-    if(state.size() < 26) return false;
-    trigger_pin_ = state[0]; think_time_tenths_ = state[1]; scroll_period_ms_ = state[2];
-    panel_.set_corner(LEDPanel::Corner(state[3])); cursor_enabled_ = state[4]; cursor_rows_ = state[5]; color_set_ = ColorSet(state[6]);
-    for(int i = 0; i < ColorSetCount; ++i) colors_[i].set_rgb(state[7 + i * 3], state[8 + i * 3], state[9 + i * 3], false);
-    const int prompt_size = state[25];
-    if(prompt_size < 0 || state.size() != unsigned(26 + prompt_size)) return false;
+    if(state.size() < 25) return false;
+    think_time_tenths_ = state[0]; scroll_period_ms_ = state[1];
+    panel_.set_corner(LEDPanel::Corner(state[2])); cursor_enabled_ = state[3]; cursor_rows_ = state[4]; color_set_ = ColorSet(state[5]);
+    for(int i = 0; i < ColorSetCount; ++i) colors_[i].set_rgb(state[6 + i * 3], state[7 + i * 3], state[8 + i * 3], false);
+    const int prompt_size = state[24];
+    if(prompt_size < 0 || state.size() != unsigned(25 + prompt_size)) return false;
     prompt_.clear();
-    for(int i = 0; i < prompt_size; ++i) prompt_.push_back(static_cast<char>(state[26 + i]));
+    for(int i = 0; i < prompt_size; ++i) prompt_.push_back(static_cast<char>(state[25 + i]));
     set_values(false);
     return true;
 }
 
-int32_t Magic8BallMenu::get_version() { return 1; }
+int32_t Magic8BallMenu::get_version() { return 2; }
 int32_t Magic8BallMenu::get_supplier_id() { return 0x4d38424c; } // "M8BL"

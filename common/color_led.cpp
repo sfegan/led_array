@@ -382,6 +382,7 @@ SerialPIOMenu::SerialPIOMenu(int pin, int baudrate):
     set_nled_value(false);
     set_non_value(false);
     set_back_value(false);
+    set_trigger_pin_value(false);
     set_lamp_test_value(false);
 }
 
@@ -393,12 +394,13 @@ std::vector<int32_t> SerialPIOMenu::get_saved_state()
     state.push_back(nled_);
     state.push_back(non_);
     state.push_back(back_ ? 1 : 0);
+    state.push_back(trigger_pin_);
     return state;
 }
 
 bool SerialPIOMenu::set_saved_state(const std::vector<int32_t>& state)
 {
-    if(state.size() != 5) {
+    if(state.size() != 5 && state.size() != 6) {
         return false;
     }
     pin_ = state[0];
@@ -406,11 +408,13 @@ bool SerialPIOMenu::set_saved_state(const std::vector<int32_t>& state)
     nled_ = state[2];
     non_ = state[3];
     back_ = (state[4] != 0);
+    if(state.size() == 6) trigger_pin_ = state[5];
     set_pin_value(false);
     set_baudrate_value(false);
     set_nled_value(false);
     set_non_value(false);
     set_back_value(false);
+    set_trigger_pin_value(false);
     return true;
 }
 
@@ -463,6 +467,12 @@ void SerialPIOMenu::set_back_value(bool draw)
     set_frame_rate_value(draw);
 }
 
+void SerialPIOMenu::set_trigger_pin_value(bool draw)
+{
+    menu_items_[MIP_TRIGGER_PIN].value = std::to_string(trigger_pin_);
+    if(draw)draw_item_value(MIP_TRIGGER_PIN);
+}
+
 void SerialPIOMenu::set_frame_rate_value(bool draw)
 {
     unsigned npix = back_ ? nled_ : non_;
@@ -487,6 +497,7 @@ std::vector<SerialPIOMenu::MenuItem> SerialPIOMenu::make_menu_items()
     menu_items.at(MIP_NLED)        = {"-/N/+   : Decrease/Set/Increase number of LEDs", 4, "0"};
     menu_items.at(MIP_NON)         = {"</n/>   : Decrease/Set/Increase number of active LEDs", 4, "0"};
     menu_items.at(MIP_BACK)        = {"f       : Set front/back", 5, "FRONT"};
+    menu_items.at(MIP_TRIGGER_PIN) = {"t       : Trigger switch GPIO", 2, "22"};
     menu_items.at(MIP_LAMP_TEST)   = {"l       : Lamp test", 4, "OFF"};
     menu_items.at(MIP_FRAME_RATE)  = {"        : Maximum frame refresh rate [Hz]", 8, "0"};
     menu_items.at(MIP_EXIT)        = {"q       : Quit", 0, ""};
@@ -569,6 +580,15 @@ bool SerialPIOMenu::process_key_press(int key, int key_count, int& return_code,
         } else {
             InplaceInputMenu::input_value_in_range(baudrate_, 0, 10000000, this, MIP_BAUDRATE, 8);
             set_baudrate_value();
+        }
+        break;
+
+    case 't':
+        if(lamp_test_cycle_ >= 0) {
+            if(key_count==1) beep();
+        } else {
+            InplaceInputMenu::input_value_in_range(trigger_pin_, 0, 29, this, MIP_TRIGGER_PIN, 2);
+            set_trigger_pin_value();
         }
         break;
 

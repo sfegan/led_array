@@ -78,12 +78,14 @@ public:
     int nled() const { return nled_; }
     int non() const { return non_; }
     bool back() const { return back_; }
+    int trigger_pin() const { return trigger_pin_; }
 
     void set_pin(int pin);
     void set_baudrate(int baudrate);
     void set_nled(int nled) { nled_ = nled; }
     void set_non(int non) { non_ = non; }
     void set_back(bool back) { back_ = back; }
+    void set_trigger_pin(int pin) { trigger_pin_ = pin; }
 
     PIO pio() const { return pio_; }
     uint sm() const { return sm_; }
@@ -128,6 +130,7 @@ protected:
     int nled_ = 0;
     int non_ = 0;
     bool back_ = false;
+    int trigger_pin_ = 22;
 
     bool program_activated_ = false;
     PIO pio_;
@@ -160,6 +163,7 @@ private:
         MIP_NLED,
         MIP_NON,
         MIP_BACK,
+        MIP_TRIGGER_PIN,
         MIP_LAMP_TEST,
         MIP_FRAME_RATE,
         MIP_EXIT,
@@ -175,6 +179,7 @@ private:
     void set_nled_value(bool draw = true);
     void set_non_value(bool draw = true);
     void set_back_value(bool draw = true);
+    void set_trigger_pin_value(bool draw = true);
     void set_lamp_test_value(bool draw = true);
     void set_frame_rate_value(bool draw = true);
     
