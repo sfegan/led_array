@@ -34,3 +34,5 @@ build/
 *.out
 *.app
 common/ws2812.pio.h
+
+.DS_Store
