@@ -46,13 +46,12 @@ Magic8BallMenu::Magic8BallMenu(SerialPIO& pio, SavedStateManager* saved_state_ma
 std::vector<SimpleItemValueMenu::MenuItem> Magic8BallMenu::make_menu_items()
 {
     std::vector<MenuItem> items(MIP_NUM_ITEMS);
-    items[MIP_COLOR] = {"c       : Select editable colour", 10, "SHIMMER A"};
+    items[MIP_COLOR] = {"c/C     : Cycle modifiable colour", 10, "SHIMMER A"};
     RGBHSVMenuItems::make_menu_items(items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
     items[MIP_THINK_TIME] = {"T       : Thinking time [tenths of sec]", 3, "30"};
     items[MIP_SCROLL_SPEED] = {"x       : Pixel scroll period [ms]", 3, "50"};
-    items[MIP_CORNER] = {"o       : LED-0 panel corner (serpentine)", 12, "TOP LEFT"};
-    items[MIP_CURSOR] = {"i       : Idle cursor", 4, "<ON>"};
-    items[MIP_CURSOR_ROWS] = {"k       : Idle cursor height [rows]", 1, "8"};
+    items[MIP_CORNER] = {"o/O     : Cycle LED-0 panel corner (serpentine)", 12, "TOP LEFT"};
+    items[MIP_CURSOR_ROWS] = {"k       : Idle cursor height [rows]. 0=OFF, negative=above", 3, "8"};
     items[MIP_PROMPT] = {"p       : Set idle prompt", 4, ""};
     items[MIP_TRIGGER_NOW] = {"Space   : Trigger Magic 8-ball", 0, ""};
     // Refined at mode start once the active LED count establishes the panel width.
@@ -97,8 +96,11 @@ void Magic8BallMenu::set_values(bool draw)
     menu_items_[MIP_THINK_TIME].value = std::to_string(think_time_tenths_);
     menu_items_[MIP_SCROLL_SPEED].value = std::to_string(scroll_period_ms_);
     menu_items_[MIP_CORNER].value = corner_name();
-    menu_items_[MIP_CURSOR].set_onoff(cursor_enabled_);
-    menu_items_[MIP_CURSOR_ROWS].value = std::to_string(cursor_rows_);
+    if(cursor_rows_==0) {
+        menu_items_[MIP_CURSOR_ROWS].set_onoff(false);
+    } else {
+        menu_items_[MIP_CURSOR_ROWS].value = std::to_string(cursor_rows_);
+    }
     menu_items_[MIP_PROMPT].value = prompt_;
     set_state_value(false);
     if(draw) for(int i = MIP_THINK_TIME; i <= MIP_PROMPT; ++i) draw_item_value(i);
@@ -199,9 +201,13 @@ void Magic8BallMenu::send_panel()
     panel_.clear();
     if(state_ == State::Idle) {
         panel_.draw_text(prompt_, 0, color(Cursor), 0);
-        if(cursor_enabled_ && ((frame_ / 50) & 1) == 0) {
+        if(cursor_rows_!=0 && ((frame_ / 50) & 1) == 0) {
             const int cursor_cell = std::min(int(prompt_.size()), max_prompt_length() - 1);
-            panel_.fill_rect(cursor_cell * 8, panel_.height() - cursor_rows_, 8, cursor_rows_, color(Cursor));
+            if(cursor_rows_ < 0) {
+                panel_.fill_rect(cursor_cell * 8, 0, 8, -cursor_rows_, color(Cursor));
+            } else {
+                panel_.fill_rect(cursor_cell * 8, panel_.height() - cursor_rows_, 8, cursor_rows_, color(Cursor));
+            }
         }
     } else if(state_ == State::Thinking) {
         // A low-current, deterministic shimmer: each pixel alternates between
@@ -263,11 +269,25 @@ bool Magic8BallMenu::process_key_press(int key, int key_count, int& return_code,
     switch(key) {
     case ' ': handle_trigger(); break;
     case 'c': color_set_ = ColorSet((color_set_ + 1) % ColorSetCount); set_color_set(); break;
+    case 'C': color_set_ = ColorSet((color_set_ + ColorSetCount - 1) % ColorSetCount); set_color_set(); break;
     case 'T': InplaceInputMenu::input_value_in_range(think_time_tenths_, 1, 255, this, MIP_THINK_TIME, 3); menu_items_[MIP_THINK_TIME].value = std::to_string(think_time_tenths_); draw_item_value(MIP_THINK_TIME); break;
     case 'x': InplaceInputMenu::input_value_in_range(scroll_period_ms_, 10, 255, this, MIP_SCROLL_SPEED, 3); menu_items_[MIP_SCROLL_SPEED].value = std::to_string(scroll_period_ms_); draw_item_value(MIP_SCROLL_SPEED); break;
     case 'o': panel_.set_corner(LEDPanel::Corner((int(panel_.corner()) + 1) % 4)); menu_items_[MIP_CORNER].value = corner_name(); draw_item_value(MIP_CORNER); send_panel(); break;
-    case 'i': cursor_enabled_ = !cursor_enabled_; menu_items_[MIP_CURSOR].set_onoff(cursor_enabled_); draw_item_value(MIP_CURSOR); send_panel(); break;
-    case 'k': InplaceInputMenu::input_value_in_range(cursor_rows_, 1, 8, this, MIP_CURSOR_ROWS, 1); menu_items_[MIP_CURSOR_ROWS].value = std::to_string(cursor_rows_); draw_item_value(MIP_CURSOR_ROWS); send_panel(); break;
+    case 'O': panel_.set_corner(LEDPanel::Corner((int(panel_.corner()) + 3) % 4)); menu_items_[MIP_CORNER].value = corner_name(); draw_item_value(MIP_CORNER); send_panel(); break;
+    case 'k': 
+        if(cursor_rows_==0) {
+            menu_items_[MIP_CURSOR_ROWS].value = std::to_string(cursor_rows_);
+            draw_item_value(MIP_CURSOR_ROWS); 
+        }
+        InplaceInputMenu::input_value_in_range(cursor_rows_, -7, 8, this, MIP_CURSOR_ROWS, 2); 
+        if(cursor_rows_==0) {
+            menu_items_[MIP_CURSOR_ROWS].set_onoff(false);
+        } else {
+            menu_items_[MIP_CURSOR_ROWS].value = std::to_string(cursor_rows_);
+        }
+        draw_item_value(MIP_CURSOR_ROWS); 
+        send_panel(); 
+        break;
     case 'p': {
         // Keep editing in the menu's value field, so there is no separate
         // dialog to clean up and the prompt remains visible as it is typed.
@@ -305,7 +325,7 @@ bool Magic8BallMenu::process_timer(bool controller_is_connected, int&, absolute_
 
 std::vector<int32_t> Magic8BallMenu::get_saved_state()
 {
-    std::vector<int32_t> state = {think_time_tenths_, scroll_period_ms_, int(panel_.corner()), cursor_enabled_, cursor_rows_, int(color_set_)};
+    std::vector<int32_t> state = {think_time_tenths_, scroll_period_ms_, int(panel_.corner()), cursor_rows_!=0, cursor_rows_, int(color_set_)};
     for(auto& c : colors_) { state.push_back(c.r()); state.push_back(c.g()); state.push_back(c.b()); }
     state.push_back(prompt_.size());
     for(char c : prompt_) state.push_back(static_cast<unsigned char>(c));
@@ -316,7 +336,7 @@ bool Magic8BallMenu::set_saved_state(const std::vector<int32_t>& state)
 {
     if(state.size() < 25) return false;
     think_time_tenths_ = state[0]; scroll_period_ms_ = state[1];
-    panel_.set_corner(LEDPanel::Corner(state[2])); cursor_enabled_ = state[3]; cursor_rows_ = state[4]; color_set_ = ColorSet(state[5]);
+    panel_.set_corner(LEDPanel::Corner(state[2])); cursor_rows_ = state[4]; color_set_ = ColorSet(state[5]);
     for(int i = 0; i < ColorSetCount; ++i) colors_[i].set_rgb(state[6 + i * 3], state[7 + i * 3], state[8 + i * 3], false);
     const int prompt_size = state[24];
     if(prompt_size < 0 || state.size() != unsigned(25 + prompt_size)) return false;
