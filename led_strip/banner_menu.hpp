@@ -32,6 +32,7 @@ private:
     enum MenuItemPositions {
         MIP_ACTIVE_MSG,
         MIP_PLAY_MODE,
+        MIP_FONT,
         MIP_TEXT,
         MIP_R,
         MIP_G,
@@ -51,6 +52,7 @@ private:
     void set_values(bool draw = true);
     void set_active_msg_value(bool draw = true);
     void set_play_mode_value(bool draw = true);
+    void set_font_spacing_value(bool draw = true);
     void set_text_value(bool draw = true);
     void set_ext_trigger_value(bool draw = true);
     void select_message(int index);

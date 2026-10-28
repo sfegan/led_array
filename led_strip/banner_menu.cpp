@@ -22,6 +22,7 @@ BannerMenu::BannerMenu(SerialPIO& pio, SavedStateManager* saved_state_manager):
     messages_[1] = "WORLD";
     colors_[0].set_rgb(0, 96, 0, false);
     colors_[1].set_rgb(96, 48, 0, false);
+    panel_.set_font_spacing(LEDPanel::FontSpacing::Proportional);
     set_values(false);
 }
 
@@ -35,6 +36,7 @@ std::vector<SimpleItemValueMenu::MenuItem> BannerMenu::make_menu_items()
     std::vector<MenuItem> items(MIP_NUM_ITEMS);
     items[MIP_ACTIVE_MSG]   = {"Space   : Active message", 10, "MESSAGE 1"};
     items[MIP_PLAY_MODE]    = {"a       : Play mode (REPEAT/ALTERNATE/STOPPED)", 9, "REPEAT"};
+    items[MIP_FONT]         = {"f       : Font spacing", 12, "PROPORTIONAL"};
     items[MIP_TEXT]         = {"t       : Edit active message text", 24, ""};
     RGBHSVMenuItems::make_menu_items(items, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V);
     items[MIP_SCROLL_SPEED] = {"x       : Pixel scroll period [ms]", 3, "50"};
@@ -78,6 +80,13 @@ void BannerMenu::set_play_mode_value(bool draw)
     if(draw) draw_item_value(MIP_PLAY_MODE);
 }
 
+void BannerMenu::set_font_spacing_value(bool draw)
+{
+    menu_items_[MIP_FONT].value = (panel_.font_spacing() == LEDPanel::FontSpacing::Proportional) ?
+        "PROPORTIONAL" : "FIXED";
+    if(draw) draw_item_value(MIP_FONT);
+}
+
 void BannerMenu::set_text_value(bool draw)
 {
     const std::string& msg = messages_[active_message_];
@@ -99,6 +108,7 @@ void BannerMenu::set_values(bool draw)
 {
     set_active_msg_value(draw);
     set_play_mode_value(draw);
+    set_font_spacing_value(draw);
     set_text_value(draw);
     colors_[active_message_].redraw(draw);
     menu_items_[MIP_SCROLL_SPEED].value = std::to_string(scroll_period_ms_);
@@ -244,6 +254,15 @@ bool BannerMenu::process_key_press(int key, int key_count, int& return_code,
         send_panel();
         break;
 
+    case 'f':
+    case 'F':
+        panel_.set_font_spacing(panel_.font_spacing() == LEDPanel::FontSpacing::Proportional ?
+            LEDPanel::FontSpacing::Fixed : LEDPanel::FontSpacing::Proportional);
+        set_font_spacing_value(true);
+        reset_scroll();
+        send_panel();
+        break;
+
     case 't':
     case 'T': {
         InputMenu input(80, "Edit Message Text", "Text: ", VI_STRING, this);
@@ -366,7 +385,8 @@ std::vector<int32_t> BannerMenu::get_saved_state()
         static_cast<int32_t>(panel_.corner()),
         colors_[0].r(), colors_[0].g(), colors_[0].b(),
         colors_[1].r(), colors_[1].g(), colors_[1].b(),
-        static_cast<int32_t>(mode_)
+        static_cast<int32_t>(mode_),
+        static_cast<int32_t>(panel_.font_spacing())
     };
     for(int m = 0; m < 2; ++m) {
         state.push_back(static_cast<int32_t>(messages_[m].size()));
@@ -379,7 +399,7 @@ std::vector<int32_t> BannerMenu::get_saved_state()
 
 bool BannerMenu::set_saved_state(const std::vector<int32_t>& state)
 {
-    if(state.size() < 13) return false;
+    if(state.size() < 14) return false;
     size_t idx = 0;
     active_message_ = state[idx++] ? 1 : 0;
     external_trigger_enabled_ = state[idx++] != 0;
@@ -397,6 +417,9 @@ bool BannerMenu::set_saved_state(const std::vector<int32_t>& state)
     } else {
         mode_ = PlayMode::Repeat;
     }
+
+    int font_val = state[idx++];
+    panel_.set_font_spacing(font_val == 0 ? LEDPanel::FontSpacing::Fixed : LEDPanel::FontSpacing::Proportional);
 
     for(int m = 0; m < 2; ++m) {
         if(idx >= state.size()) return false;
