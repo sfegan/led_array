@@ -25,7 +25,7 @@ public:
 private:
     enum MenuItemPositions { MIP_COLOR, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V,
         MIP_THINK_TIME, MIP_SCROLL_SPEED, MIP_CORNER,
-        MIP_CURSOR_ROWS, MIP_PROMPT, MIP_TRIGGER_NOW, MIP_STATE, MIP_WRITE_STATE, MIP_EXIT, MIP_NUM_ITEMS };
+        MIP_CURSOR_ROWS, MIP_FONT, MIP_PROMPT, MIP_TRIGGER_NOW, MIP_STATE, MIP_WRITE_STATE, MIP_EXIT, MIP_NUM_ITEMS };
     enum class State { Idle, Thinking, Scrolling };
     enum ColorSet { ShimmerA, ShimmerB, Positive, Uncertain, Negative, Cursor, ColorSetCount };
 
@@ -37,6 +37,7 @@ private:
     void configure_trigger_pin();
     void handle_trigger();
     void set_color_set(bool draw = true);
+    void set_font_spacing_value(bool draw = true);
     void set_state_value(bool draw = true);
     std::string state_value() const;
     int max_prompt_length() const;

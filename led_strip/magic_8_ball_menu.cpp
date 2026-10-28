@@ -11,7 +11,8 @@ Magic8BallMenu* Magic8BallMenu::active_menu_ = nullptr;
 
 namespace {
 struct Answer { const char* text; int category; }; // 0 positive, 1 uncertain, 2 negative
-constexpr Answer answers[] = {
+
+constexpr Answer answers_uc[] = {
     {"IT IS CERTAIN", 0}, {"IT IS DECIDEDLY SO", 0}, {"WITHOUT A DOUBT", 0},
     {"YES DEFINITELY", 0}, {"YOU MAY RELY ON IT", 0}, {"AS I SEE IT YES", 0},
     {"MOST LIKELY", 0}, {"OUTLOOK GOOD", 0}, {"YES", 0}, {"SIGNS POINT TO YES", 0},
@@ -20,6 +21,17 @@ constexpr Answer answers[] = {
     {"DO NOT COUNT ON IT", 2}, {"MY REPLY IS NO", 2}, {"MY SOURCES SAY NO", 2},
     {"OUTLOOK NOT SO GOOD", 2}, {"VERY DOUBTFUL", 2},
 };
+
+constexpr Answer answers[] = {
+    {"It is certain", 0}, {"It is decidedly so", 0}, {"Without a doubt", 0},
+    {"Yes, definitely", 0}, {"You may rely on it", 0}, {"As I see it, yes", 0},
+    {"Most likely", 0}, {"Outlook good", 0}, {"Yes", 0}, {"Signs point to yes", 0},
+    {"Reply hazy, try again", 1}, {"Ask again later", 1}, {"Better not tell you now", 1},
+    {"Cannot predict now", 1}, {"Concentrate and ask again", 1},
+    {"Don't count on it", 2}, {"My reply is no", 2}, {"My sources say no", 2},
+    {"Outlook not so good", 2}, {"Very doubtful", 2},
+};
+
 }
 
 Magic8BallMenu::Magic8BallMenu(SerialPIO& pio, SavedStateManager* saved_state_manager):
@@ -34,6 +46,7 @@ Magic8BallMenu::Magic8BallMenu(SerialPIO& pio, SavedStateManager* saved_state_ma
         RGBHSVMenuItems(*this, MIP_R, MIP_G, MIP_B, MIP_H, MIP_S, MIP_V) }
 {
     timer_interval_us_ = 10000; // 100 Hz: smooth enough for animation and button handling
+    panel_.set_font_spacing(LEDPanel::FontSpacing::Proportional);
     colors_[ShimmerA].set_rgb(24, 0, 80, false);
     colors_[ShimmerB].set_rgb(0, 12, 64, false);
     colors_[Positive].set_rgb(0, 96, 0, false);
@@ -52,7 +65,8 @@ std::vector<SimpleItemValueMenu::MenuItem> Magic8BallMenu::make_menu_items()
     items[MIP_SCROLL_SPEED] = {"x       : Pixel scroll period [ms]", 3, "50"};
     items[MIP_CORNER] = {"o/O     : Cycle LED-0 panel corner (serpentine)", 12, "TOP LEFT"};
     items[MIP_CURSOR_ROWS] = {"k       : Idle cursor height [rows]. 0=OFF, negative=above", 3, "8"};
-    items[MIP_PROMPT] = {"p       : Set idle prompt", 4, ""};
+    items[MIP_FONT] = {"f       : Font spacing", 12, "PROPORTIONAL"};
+    items[MIP_PROMPT] = {"p       : Set idle prompt", 16, ""};
     items[MIP_TRIGGER_NOW] = {"Space   : Trigger Magic 8-ball", 0, ""};
     // Refined at mode start once the active LED count establishes the panel width.
     items[MIP_STATE] = {"        : Current state", 10, "IDLE"};
@@ -90,6 +104,13 @@ void Magic8BallMenu::set_color_set(bool draw)
     colors_[color_set_].redraw(draw);
 }
 
+void Magic8BallMenu::set_font_spacing_value(bool draw)
+{
+    menu_items_[MIP_FONT].value = (panel_.font_spacing() == LEDPanel::FontSpacing::Proportional) ?
+        "PROPORTIONAL" : "FIXED";
+    if(draw) draw_item_value(MIP_FONT);
+}
+
 void Magic8BallMenu::set_values(bool draw)
 {
     set_color_set(draw);
@@ -101,6 +122,7 @@ void Magic8BallMenu::set_values(bool draw)
     } else {
         menu_items_[MIP_CURSOR_ROWS].value = std::to_string(cursor_rows_);
     }
+    set_font_spacing_value(draw);
     menu_items_[MIP_PROMPT].value = prompt_;
     set_state_value(false);
     if(draw) for(int i = MIP_THINK_TIME; i <= MIP_PROMPT; ++i) draw_item_value(i);
@@ -109,7 +131,7 @@ void Magic8BallMenu::set_values(bool draw)
 
 int Magic8BallMenu::max_prompt_length() const
 {
-    return panel_.width() / 8;
+    return std::max(16, panel_.width() / 4);
 }
 
 std::string Magic8BallMenu::state_value() const
@@ -123,11 +145,21 @@ std::string Magic8BallMenu::state_value() const
     }
 
     const std::string text = answers[response_index_].text;
-    // Report the text currently crossing the window, rather than just a
-    // generic state.  Each glyph occupies eight pixels plus a one-pixel gap.
-    const int first = std::max(0, -scroll_x_ / 9);
-    const int last = std::min(int(text.size()), (panel_.width() - scroll_x_ + 8) / 9);
-    if(first >= last) return scroll_x_ >= 0 ? "\"ENTERING\"" : "\"LEAVING\"";
+    int cur_x = scroll_x_;
+    int first = -1;
+    int last = 0;
+    for(size_t i = 0; i < text.size(); ++i) {
+        int w = (panel_.font_spacing() == LEDPanel::FontSpacing::Proportional) ?
+            (panel_.glyph_metrics(text[i]).width + 1) : 8;
+        if(cur_x + w > 0 && first < 0) {
+            first = static_cast<int>(i);
+        }
+        if(cur_x < panel_.width()) {
+            last = static_cast<int>(i) + 1;
+        }
+        cur_x += w;
+    }
+    if(first < 0 || first >= last) return scroll_x_ >= 0 ? "\"ENTERING\"" : "\"LEAVING\"";
     const std::string visible = text.substr(first, last - first);
     return "\"" + visible + "\"";
 }
@@ -201,13 +233,22 @@ void Magic8BallMenu::send_panel()
 {
     panel_.clear();
     if(state_ == State::Idle) {
-        panel_.draw_text(prompt_, 0, color(Cursor), 0);
+        panel_.draw_text(prompt_, 0, color(Cursor));
         if(cursor_rows_!=0 && ((frame_ / 50) & 1) == 0) {
-            const int cursor_cell = std::min(int(prompt_.size()), max_prompt_length() - 1);
-            if(cursor_rows_ < 0) {
-                panel_.fill_rect(cursor_cell * 8, 0, 8, -cursor_rows_, color(Cursor));
+            const int prompt_w = panel_.text_width(prompt_);
+            const int cursor_w = 8;
+            const int gap = prompt_.empty() ? 0 : 1;
+            int cursor_x;
+            if(prompt_w + gap + cursor_w <= panel_.width()) {
+                cursor_x = prompt_w + gap;
             } else {
-                panel_.fill_rect(cursor_cell * 8, panel_.height() - cursor_rows_, 8, cursor_rows_, color(Cursor));
+                cursor_x = std::max(0, panel_.width() - cursor_w);
+            }
+
+            if(cursor_rows_ < 0) {
+                panel_.fill_rect(cursor_x, 0, cursor_w, -cursor_rows_, color(Cursor));
+            } else {
+                panel_.fill_rect(cursor_x, panel_.height() - cursor_rows_, cursor_w, cursor_rows_, color(Cursor));
             }
         }
     } else if(state_ == State::Thinking) {
@@ -219,7 +260,7 @@ void Magic8BallMenu::send_panel()
     } else {
         const Answer& answer = answers[response_index_];
         const ColorSet sets[] = {Positive, Uncertain, Negative};
-        panel_.draw_text(answer.text, scroll_x_, color(sets[answer.category]), 1);
+        panel_.draw_text(answer.text, scroll_x_, color(sets[answer.category]));
     }
 
     std::vector<uint32_t> output(std::max(0, pio_.nled()), 0);
@@ -236,7 +277,6 @@ bool Magic8BallMenu::event_loop_starting(int&)
     // number of horizontal columns: 256 = 32x8, 512 = 64x8, and so on.
     if(pio_.non() >= 8 && pio_.non() % 8 == 0) panel_.resize(pio_.non() / 8, 8);
     if(int(prompt_.size()) > max_prompt_length()) prompt_.resize(max_prompt_length());
-    // A visible glyph consumes nine columns (eight pixels plus its gap).
     // Quotes take two more characters; retain space for the status words too.
     menu_items_[MIP_STATE].max_value_size = std::max(10, (panel_.width() + 8) / 9 + 2);
     menu_items_[MIP_PROMPT].max_value_size = max_prompt_length();
@@ -260,7 +300,7 @@ void Magic8BallMenu::event_loop_finishing(int&)
 }
 
 bool Magic8BallMenu::process_key_press(int key, int key_count, int& return_code,
-    const std::vector<std::string>&, absolute_time_t&)
+    const std::vector<std::string>&, absolute_time_t& next_timer)
 {
     bool changed = false;
     if(colors_[color_set_].process_key_press(key, key_count, changed)) {
@@ -289,6 +329,19 @@ bool Magic8BallMenu::process_key_press(int key, int key_count, int& return_code,
         draw_item_value(MIP_CURSOR_ROWS); 
         send_panel(); 
         break;
+    case 'f':
+    case 'F':
+        panel_.set_font_spacing(panel_.font_spacing() == LEDPanel::FontSpacing::Proportional ?
+            LEDPanel::FontSpacing::Fixed : LEDPanel::FontSpacing::Proportional);
+        if(int(prompt_.size()) > max_prompt_length()) {
+            prompt_.resize(max_prompt_length());
+            menu_items_[MIP_PROMPT].value = prompt_;
+            draw_item_value(MIP_PROMPT);
+        }
+        menu_items_[MIP_PROMPT].max_value_size = max_prompt_length();
+        set_font_spacing_value(true);
+        send_panel();
+        break;
     case 'p': {
         // Keep editing in the menu's value field, so there is no separate
         // dialog to clean up and the prompt remains visible as it is typed.
@@ -300,11 +353,20 @@ bool Magic8BallMenu::process_key_press(int key, int key_count, int& return_code,
             menu_items_[MIP_PROMPT].value = prompt_;
             send_panel();
         }
-        // Replace the in-place cursor/underscore rendering with a clean menu.
+        // Discard accumulated timer events while editing
+        next_timer = delayed_by_us(get_absolute_time(), timer_interval_us_);
         redraw();
         break;
     }
-    case 23: if(saved_state_manager_) { saved_state_manager_->save_state(); PopupMenu pm("State written to flash", 2, true, this, "Information"); pm.event_loop(); redraw(); } break;
+    case 23:
+        if(saved_state_manager_) {
+            saved_state_manager_->save_state();
+            PopupMenu pm("State written to flash", 2, true, this, "Information");
+            pm.event_loop();
+            next_timer = delayed_by_us(get_absolute_time(), timer_interval_us_);
+            redraw();
+        }
+        break;
     case 'q': case 'Q': return_code = 0; return false;
     default: if(key_count == 1) beep(); break;
     }
@@ -316,7 +378,7 @@ bool Magic8BallMenu::process_timer(bool controller_is_connected, int&, absolute_
     ++frame_;
     if(state_ == State::Thinking && ++think_ticks_ >= think_time_tenths_ * 10) choose_response();
     if(state_ == State::Scrolling && frame_ % std::max(1, scroll_period_ms_ / 10) == 0) {
-        if(--scroll_x_ < -panel_.text_width(answers[response_index_].text, 1)) state_ = State::Idle;
+        if(--scroll_x_ < -panel_.text_width(answers[response_index_].text)) state_ = State::Idle;
     }
     if(controller_is_connected && frame_ % 100 == 0) set_heartbeat(!heartbeat_);
     set_state_value(true);
@@ -326,7 +388,11 @@ bool Magic8BallMenu::process_timer(bool controller_is_connected, int&, absolute_
 
 std::vector<int32_t> Magic8BallMenu::get_saved_state()
 {
-    std::vector<int32_t> state = {think_time_tenths_, scroll_period_ms_, int(panel_.corner()), cursor_rows_!=0, cursor_rows_, int(color_set_)};
+    std::vector<int32_t> state = {
+        think_time_tenths_, scroll_period_ms_, int(panel_.corner()),
+        cursor_rows_!=0, cursor_rows_, int(color_set_),
+        int(panel_.font_spacing())
+    };
     for(auto& c : colors_) { state.push_back(c.r()); state.push_back(c.g()); state.push_back(c.b()); }
     state.push_back(prompt_.size());
     for(char c : prompt_) state.push_back(static_cast<unsigned char>(c));
@@ -335,17 +401,21 @@ std::vector<int32_t> Magic8BallMenu::get_saved_state()
 
 bool Magic8BallMenu::set_saved_state(const std::vector<int32_t>& state)
 {
-    if(state.size() < 25) return false;
-    think_time_tenths_ = state[0]; scroll_period_ms_ = state[1];
-    panel_.set_corner(LEDPanel::Corner(state[2])); cursor_rows_ = state[4]; color_set_ = ColorSet(state[5]);
-    for(int i = 0; i < ColorSetCount; ++i) colors_[i].set_rgb(state[6 + i * 3], state[7 + i * 3], state[8 + i * 3], false);
-    const int prompt_size = state[24];
-    if(prompt_size < 0 || state.size() != unsigned(25 + prompt_size)) return false;
+    if(state.size() < 26) return false;
+    think_time_tenths_ = state[0];
+    scroll_period_ms_ = state[1];
+    panel_.set_corner(LEDPanel::Corner(state[2]));
+    cursor_rows_ = state[4];
+    color_set_ = ColorSet(state[5]);
+    panel_.set_font_spacing(state[6] == 0 ? LEDPanel::FontSpacing::Fixed : LEDPanel::FontSpacing::Proportional);
+    for(int i = 0; i < ColorSetCount; ++i) colors_[i].set_rgb(state[7 + i * 3], state[8 + i * 3], state[9 + i * 3], false);
+    const int prompt_size = state[25];
+    if(prompt_size < 0 || state.size() != unsigned(26 + prompt_size)) return false;
     prompt_.clear();
-    for(int i = 0; i < prompt_size; ++i) prompt_.push_back(static_cast<char>(state[25 + i]));
+    for(int i = 0; i < prompt_size; ++i) prompt_.push_back(static_cast<char>(state[26 + i]));
     set_values(false);
     return true;
 }
 
-int32_t Magic8BallMenu::get_version() { return 2; }
+int32_t Magic8BallMenu::get_version() { return 3; }
 int32_t Magic8BallMenu::get_supplier_id() { return 0x4d38424c; } // "M8BL"
