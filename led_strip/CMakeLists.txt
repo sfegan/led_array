@@ -7,7 +7,8 @@ target_sources(led_strip PRIVATE main.cpp
         mono_color_menu.cpp 
         bi_color_menu.cpp
         spider_run_menu.cpp
-        magic_8_ball_menu.cpp)
+        magic_8_ball_menu.cpp
+        banner_menu.cpp)
 
 # pull in common dependencies
 target_link_libraries(led_strip PRIVATE

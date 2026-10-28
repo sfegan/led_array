@@ -56,7 +56,7 @@ void LEDPanel::draw_text(const std::string& text, int x, uint32_t color, int cha
     }
 }
 
-int LEDPanel::text_width(const std::string& text) const
+int LEDPanel::text_width(const std::string& text, int character_spacing) const
 {
-    return text.empty() ? 0 : int(text.size()) * 9 - 1;
+    return text.empty() ? 0 : int(text.size()) * (8 + character_spacing);
 }

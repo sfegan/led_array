@@ -22,8 +22,8 @@ public:
 
     void set_pixel(int x, int y, uint32_t color);
     void fill_rect(int x, int y, int width, int height, uint32_t color);
-    void draw_text(const std::string& text, int x, uint32_t color, int character_spacing = 1);
-    int text_width(const std::string& text) const;
+    void draw_text(const std::string& text, int x, uint32_t color, int character_spacing = 0);
+    int text_width(const std::string& text, int character_spacing = 0) const;
 
     // Return pixels in physical serial order.  Mapping is serpentine today;
     // keeping it here makes other wiring layouts a contained future addition.

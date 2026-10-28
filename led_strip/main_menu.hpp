@@ -10,6 +10,7 @@
 #include "bi_color_menu.hpp"
 #include "spider_run_menu.hpp"
 #include "magic_8_ball_menu.hpp"
+#include "banner_menu.hpp"
 
 class MainMenu: public SimpleItemValueMenu,
                 public SavedStateSupplierConsumer,
@@ -41,6 +42,7 @@ private:
         MIP_BI_COLOR,
         MIP_SPIDER_RUN,
         MIP_MAGIC_8_BALL,
+        MIP_BANNER,
         MIP_WRITE_STATE,
         MIP_REBOOT,
         MIP_NUM_ITEMS // MUST BE LAST ITEM IN LIST
@@ -55,6 +57,7 @@ private:
     BiColorMenu bi_color_menu_;
     SpiderRunMenu spider_run_menu_;
     Magic8BallMenu magic_8_ball_menu_;
+    BannerMenu banner_menu_;
 
     int32_t selected_menu_ = 0;
 };

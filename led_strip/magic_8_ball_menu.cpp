@@ -118,6 +118,7 @@ std::string Magic8BallMenu::state_value() const
     if(state_ == State::Thinking) {
         if(forced_response_ == 1) return "THINKING+";
         if(forced_response_ == 2) return "THINKING-";
+        if(forced_response_ == 3) return "THINKING=";
         return "THINKING";
     }
 
@@ -179,7 +180,7 @@ void Magic8BallMenu::start_thinking()
 void Magic8BallMenu::handle_trigger()
 {
     if(state_ == State::Idle) start_thinking();
-    else if(state_ == State::Thinking && forced_response_ < 2) ++forced_response_;
+    else if(state_ == State::Thinking && forced_response_ < 3) ++forced_response_;
 }
 
 void Magic8BallMenu::choose_response()
@@ -188,7 +189,7 @@ void Magic8BallMenu::choose_response()
     for(unsigned i = 0; i < sizeof(answers) / sizeof(answers[0]); ++i) {
         // The first extra trigger forces positive (category 0); the second
         // forces negative (category 2), deliberately skipping uncertain.
-        const int forced_category = forced_response_ == 1 ? 0 : 2;
+        const int forced_category = (4 - forced_response_)%3;
         if(forced_response_ == 0 || answers[i].category == forced_category) choices.push_back(i);
     }
     response_index_ = choices[rng_() % choices.size()];
@@ -218,7 +219,7 @@ void Magic8BallMenu::send_panel()
     } else {
         const Answer& answer = answers[response_index_];
         const ColorSet sets[] = {Positive, Uncertain, Negative};
-        panel_.draw_text(answer.text, scroll_x_, color(sets[answer.category]));
+        panel_.draw_text(answer.text, scroll_x_, color(sets[answer.category]), 1);
     }
 
     std::vector<uint32_t> output(std::max(0, pio_.nled()), 0);
@@ -315,7 +316,7 @@ bool Magic8BallMenu::process_timer(bool controller_is_connected, int&, absolute_
     ++frame_;
     if(state_ == State::Thinking && ++think_ticks_ >= think_time_tenths_ * 10) choose_response();
     if(state_ == State::Scrolling && frame_ % std::max(1, scroll_period_ms_ / 10) == 0) {
-        if(--scroll_x_ < -panel_.text_width(answers[response_index_].text)) state_ = State::Idle;
+        if(--scroll_x_ < -panel_.text_width(answers[response_index_].text, 1)) state_ = State::Idle;
     }
     if(controller_is_connected && frame_ % 100 == 0) set_heartbeat(!heartbeat_);
     set_state_value(true);
