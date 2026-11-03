@@ -32,6 +32,12 @@ constexpr Answer answers[] = {
     {"Outlook not so good", 2}, {"Very doubtful", 2},
 };
 
+const Answer* answer_set(LEDPanel::FontSpacing spacing) {
+    return spacing == LEDPanel::FontSpacing::Fixed ? answers_uc : answers;
+}
+
+constexpr unsigned answer_set_size = sizeof(answers) / sizeof(answers[0]);
+
 }
 
 Magic8BallMenu::Magic8BallMenu(SerialPIO& pio, SavedStateManager* saved_state_manager):
@@ -144,7 +150,7 @@ std::string Magic8BallMenu::state_value() const
         return "THINKING";
     }
 
-    const std::string text = answers[response_index_].text;
+    const std::string text = answer_set(panel_.font_spacing())[response_index_].text;
     int cur_x = scroll_x_;
     int first = -1;
     int last = 0;
@@ -218,11 +224,12 @@ void Magic8BallMenu::handle_trigger()
 void Magic8BallMenu::choose_response()
 {
     std::vector<int> choices;
-    for(unsigned i = 0; i < sizeof(answers) / sizeof(answers[0]); ++i) {
+    const Answer* aset = answer_set(panel_.font_spacing());
+    for(unsigned i = 0; i < answer_set_size; ++i) {
         // The first extra trigger forces positive (category 0); the second
         // forces negative (category 2), deliberately skipping uncertain.
         const int forced_category = (4 - forced_response_)%3;
-        if(forced_response_ == 0 || answers[i].category == forced_category) choices.push_back(i);
+        if(forced_response_ == 0 || aset[i].category == forced_category) choices.push_back(i);
     }
     response_index_ = choices[rng_() % choices.size()];
     scroll_x_ = panel_.width();
@@ -258,7 +265,7 @@ void Magic8BallMenu::send_panel()
             for(int x = 0; x < panel_.width(); ++x)
                 panel_.set_pixel(x, y, ((x + y * 3 + int(frame_ / 3)) & 7) < 3 ? color(ShimmerA) : color(ShimmerB));
     } else {
-        const Answer& answer = answers[response_index_];
+        const Answer& answer = answer_set(panel_.font_spacing())[response_index_];
         const ColorSet sets[] = {Positive, Uncertain, Negative};
         panel_.draw_text(answer.text, scroll_x_, color(sets[answer.category]));
     }
@@ -378,7 +385,7 @@ bool Magic8BallMenu::process_timer(bool controller_is_connected, int&, absolute_
     ++frame_;
     if(state_ == State::Thinking && ++think_ticks_ >= think_time_tenths_ * 10) choose_response();
     if(state_ == State::Scrolling && frame_ % std::max(1, scroll_period_ms_ / 10) == 0) {
-        if(--scroll_x_ < -panel_.text_width(answers[response_index_].text)) state_ = State::Idle;
+        if(--scroll_x_ < -panel_.text_width(answer_set(panel_.font_spacing())[response_index_].text)) state_ = State::Idle;
     }
     if(controller_is_connected && frame_ % 100 == 0) set_heartbeat(!heartbeat_);
     set_state_value(true);
