@@ -91,6 +91,9 @@ public:
     void set_trigger_line_1(int pin) { trigger_pin_ = pin; }
     void set_trigger_line_2(int pin) { trigger_pin_2_ = pin; }
 
+    bool blanking() const { return blanking_; }
+    void set_blanking(bool blanking);
+
     PIO pio() const { return pio_; }
     uint sm() const { return sm_; }
     bool program_activated() const { return program_activated_; }
@@ -136,6 +139,7 @@ protected:
     bool back_ = false;
     int trigger_pin_ = 9;
     int trigger_pin_2_ = 10;
+    bool blanking_ = false;
     bool program_activated_ = false;
     PIO pio_;
     uint sm_;
@@ -169,6 +173,7 @@ private:
         MIP_BACK,
         MIP_TRIGGER_LINE_1,
         MIP_TRIGGER_LINE_2,
+        MIP_BLANKING,
         MIP_LAMP_TEST,
         MIP_FRAME_RATE,
         MIP_EXIT,
@@ -186,6 +191,7 @@ private:
     void set_back_value(bool draw = true);
     void set_trigger_line_1_value(bool draw = true);
     void set_trigger_line_2_value(bool draw = true);
+    void set_blanking_value(bool draw = true);
     void set_lamp_test_value(bool draw = true);
     void set_frame_rate_value(bool draw = true);
     

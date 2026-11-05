@@ -352,11 +352,16 @@ void SerialPIO::activate_program()
 {
     // puts("Activating WS2812 program .....");
     hard_assert(!program_activated_);
+    const pio_program_t* program = blanking_ ? &ws2812_zeros_program : &ws2812_program;
     bool success = pio_claim_free_sm_and_add_program_for_gpio_range(
-        &ws2812_program, &pio_, &sm_, &offset_, pin_, 1, true);
+        program, &pio_, &sm_, &offset_, pin_, 1, true);
     pio_sm_clear_fifos(pio_, sm_);
     hard_assert(success);
-    ws2812_program_init(pio_, sm_, offset_, pin_, baudrate_, false);
+    if(blanking_) {
+        ws2812_zeros_program_init(pio_, sm_, offset_, pin_, baudrate_, false);
+    } else {
+        ws2812_program_init(pio_, sm_, offset_, pin_, baudrate_, false);
+    }
     program_activated_ = true;
     // puts("..... WS2812 program activated");
 }
@@ -366,10 +371,25 @@ void SerialPIO::deactivate_program()
     // puts("Deactivating WS2812 program .....");
     hard_assert(program_activated_);
     flush();
+    const pio_program_t* program = blanking_ ? &ws2812_zeros_program : &ws2812_program;
     pio_remove_program_and_unclaim_sm(
-        &ws2812_program, pio_, sm_, offset_);
+        program, pio_, sm_, offset_);
     program_activated_ = false;
     // puts("..... WS2812 program deactivated");
+}
+
+void SerialPIO::set_blanking(bool blanking)
+{
+    if(blanking_ == blanking) {
+        return;
+    }
+    if(program_activated_) {
+        deactivate_program();
+        blanking_ = blanking;
+        activate_program();
+    } else {
+        blanking_ = blanking;
+    }
 }
 
 SerialPIOMenu::SerialPIOMenu(int pin, int baudrate):
@@ -384,6 +404,7 @@ SerialPIOMenu::SerialPIOMenu(int pin, int baudrate):
     set_back_value(false);
     set_trigger_line_1_value(false);
     set_trigger_line_2_value(false);
+    set_blanking_value(false);
     set_lamp_test_value(false);
 }
 
@@ -496,6 +517,12 @@ void SerialPIOMenu::set_frame_rate_value(bool draw)
     if(draw)draw_item_value(MIP_FRAME_RATE);
 }
 
+void SerialPIOMenu::set_blanking_value(bool draw)
+{
+    menu_items_[MIP_BLANKING].set_onoff(blanking_);
+    if(draw)draw_item_value(MIP_BLANKING);
+}
+
 void SerialPIOMenu::set_lamp_test_value(bool draw)
 {
     menu_items_[MIP_LAMP_TEST].set_onoff(lamp_test_cycle_>=0);
@@ -512,6 +539,7 @@ std::vector<SerialPIOMenu::MenuItem> SerialPIOMenu::make_menu_items()
     menu_items.at(MIP_BACK)        = {"f       : Set front/back", 5, "FRONT"};
     menu_items.at(MIP_TRIGGER_LINE_1) = {"t       : Trigger line 1 GPIO (0-29)", 2, "9"};
     menu_items.at(MIP_TRIGGER_LINE_2) = {"T       : Trigger line 2 GPIO (0-29)", 2, "10"};
+    menu_items.at(MIP_BLANKING)    = {"0       : LED blanking", 4, "OFF"};
     menu_items.at(MIP_LAMP_TEST)   = {"l       : Lamp test", 4, "OFF"};
     menu_items.at(MIP_FRAME_RATE)  = {"        : Maximum frame refresh rate [Hz]", 8, "0"};
     menu_items.at(MIP_EXIT)        = {"q       : Quit", 0, ""};
@@ -678,6 +706,14 @@ bool SerialPIOMenu::process_key_press(int key, int key_count, int& return_code,
     case 'f':
         back_ = !back_;
         set_back_value();
+        if(lamp_test_cycle_ >= 0) {
+            send_color_string();
+        }
+        break;
+
+    case '0':
+        set_blanking(!blanking_);
+        set_blanking_value();
         if(lamp_test_cycle_ >= 0) {
             send_color_string();
         }
